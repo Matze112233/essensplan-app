@@ -30,19 +30,19 @@ export default function DishSelector({ dishes, mealType, onSelect, onClose }: Pr
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl">
         <div className="bg-gradient-to-r from-blue-950 to-blue-900 text-white p-4 rounded-t-2xl flex items-center justify-between">
           <h2 className="font-black text-lg uppercase tracking-wide">Gericht wählen</h2>
           <button onClick={onClose} className="text-blue-300 hover:text-white text-2xl leading-none">&times;</button>
         </div>
 
-        <div className="p-4 border-b flex gap-2">
+        <div className="p-4 border-b dark:border-gray-700 flex gap-2">
           <input
             type="text"
             placeholder="Suchen..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="flex-1 border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
+            className="flex-1 border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
             autoFocus
           />
           <button
@@ -61,9 +61,9 @@ export default function DishSelector({ dishes, mealType, onSelect, onClose }: Pr
               <button
                 key={dish.id}
                 onClick={() => onSelect(dish)}
-                className="w-full text-left px-4 py-3 rounded-xl hover:bg-blue-50 transition-colors border-l-4 border-transparent hover:border-red-500 mb-1"
+                className="w-full text-left px-4 py-3 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors border-l-4 border-transparent hover:border-red-500 mb-1"
               >
-                <div className="font-bold text-sm text-blue-950">{dish.name}</div>
+                <div className="font-bold text-sm text-blue-950 dark:text-blue-200">{dish.name}</div>
                 <IngredientList ingredients={dish.ingredients} className="text-xs text-gray-400 mt-0.5" />
               </button>
             ))

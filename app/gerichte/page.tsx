@@ -1,6 +1,7 @@
 'use client'
 
 import { Dish, IngredientCategory, MealType, Recipe } from '@/types'
+import { useTheme } from '@/components/ThemeProvider'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import IngredientList from '@/components/IngredientList'
@@ -37,6 +38,7 @@ const CATEGORIES: { key: CatKey; label: string; color: string; activeClass: stri
 ]
 
 export default function GerichtePage() {
+  const { dark, toggle } = useTheme()
   const [dishes, setDishes] = useState<Dish[]>([])
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [loading, setLoading] = useState(true)
@@ -159,10 +161,13 @@ export default function GerichtePage() {
   const mealLabel = (v: string) => v === 'both' ? 'Mittag & Abend' : v === 'mittag' ? 'Mittag' : 'Abend'
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <header className="bg-gradient-to-r from-blue-950 to-blue-900 text-white px-4 py-4 flex items-center gap-3 sticky top-0 z-10 shadow-lg">
         <Link href="/" className="text-blue-300 hover:text-white text-lg font-black">←</Link>
         <h1 className="text-xl font-black uppercase tracking-tight flex-1">Gerichte</h1>
+        <button onClick={toggle} className="text-blue-300 hover:text-white text-lg transition-colors" title={dark ? 'Hellmodus' : 'Nachtmodus'}>
+          {dark ? '☀' : '☾'}
+        </button>
         <button onClick={openNew} className="bg-red-600 hover:bg-red-700 text-white text-sm font-black uppercase tracking-wide px-3 py-1.5 rounded-xl transition-colors">
           + Neu
         </button>
@@ -171,13 +176,13 @@ export default function GerichtePage() {
       <main className="max-w-lg mx-auto px-4 py-6 space-y-3">
         {!loading && dishes.length > 0 && (
           <>
-            <div className="bg-white rounded-2xl shadow-md p-3 border-l-4 border-blue-900 flex gap-2">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-3 border-l-4 border-blue-900 flex gap-2">
               <input
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Gericht oder Zutat suchen..."
-                className="flex-1 border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                className="flex-1 border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
               />
               {search && (
                 <button onClick={() => setSearch('')} className="text-gray-400 hover:text-red-500 text-xl px-1">
@@ -209,10 +214,10 @@ export default function GerichtePage() {
           </div>
         ) : (
           filteredDishes.map(dish => (
-            <div key={dish.id} className="bg-white rounded-2xl shadow-md px-4 py-3 flex items-start gap-3 border-l-4 border-transparent hover:border-red-500 transition-all">
+            <div key={dish.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md px-4 py-3 flex items-start gap-3 border-l-4 border-transparent hover:border-red-500 transition-all">
               <div className="flex-1 min-w-0">
-                <div className="font-bold text-sm text-blue-950">{dish.name}</div>
-                <div className="text-xs font-bold text-blue-700 uppercase tracking-wide mt-0.5">{mealLabel(dish.suitable_for)}</div>
+                <div className="font-bold text-sm text-blue-950 dark:text-blue-200">{dish.name}</div>
+                <div className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide mt-0.5">{mealLabel(dish.suitable_for)}</div>
                 <IngredientList ingredients={dish.ingredients} className="text-xs text-gray-400 mt-1" />
               </div>
               <div className="flex gap-2 shrink-0">
@@ -226,7 +231,7 @@ export default function GerichtePage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col">
             <div className="bg-gradient-to-r from-blue-950 to-blue-900 text-white p-4 rounded-t-2xl flex items-center justify-between">
               <h2 className="font-black text-lg uppercase tracking-wide">{editingId ? 'Gericht bearbeiten' : 'Neues Gericht'}</h2>
               <button onClick={() => setShowForm(false)} className="text-blue-300 hover:text-white text-2xl leading-none">&times;</button>
@@ -234,23 +239,23 @@ export default function GerichtePage() {
 
             <div className="overflow-y-auto flex-1 p-4 space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Name</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">Name</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="z.B. Fischstäbchen mit Kartoffeln"
-                  className="w-full border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                  className="w-full border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Geeignet für</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">Geeignet für</label>
                 <select
                   value={form.suitable_for}
                   onChange={e => setForm(f => ({ ...f, suitable_for: e.target.value as DishForm['suitable_for'] }))}
-                  className="w-full border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                  className="w-full border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
                   <option value="both">Mittag & Abend</option>
                   <option value="mittag">Nur Mittag</option>
@@ -262,7 +267,7 @@ export default function GerichtePage() {
                 <div key={cat.key}>
                   <div className="flex items-center gap-2 mb-2">
                     <span className={`w-3 h-3 rounded-full shrink-0 ${cat.color}`} />
-                    <label className="text-sm font-medium text-gray-700">{cat.label}</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{cat.label}</label>
                   </div>
                   <div className="space-y-2 pl-5">
                     {form[cat.key].map((val, i) => (
@@ -272,7 +277,7 @@ export default function GerichtePage() {
                           value={val}
                           onChange={e => handleCatChange(cat.key, i, e.target.value)}
                           placeholder="optional"
-                          className="flex-1 border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                          className="flex-1 border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                         />
                         {form[cat.key].length > 1 && (
                           <button onClick={() => removeCatItem(cat.key, i)} className="text-gray-300 hover:text-red-400 text-xl leading-none px-1">
@@ -286,7 +291,7 @@ export default function GerichtePage() {
               ))}
 
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-2">Weitere Zutaten</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Weitere Zutaten</label>
                 <div className="space-y-2">
                   {form.extras.map((extra, i) => (
                     <div key={i} className="flex gap-2">
@@ -295,7 +300,7 @@ export default function GerichtePage() {
                         value={extra}
                         onChange={e => handleExtraChange(i, e.target.value)}
                         placeholder={`Zutat ${i + 1}`}
-                        className="flex-1 border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                        className="flex-1 border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                       />
                       {form.extras.length > 1 && (
                         <button onClick={() => removeExtra(i)} className="text-gray-300 hover:text-red-400 text-xl leading-none px-1">
@@ -306,14 +311,13 @@ export default function GerichtePage() {
                   ))}
                 </div>
               </div>
-            </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Rezept verknüpfen <span className="text-gray-400 font-normal">(optional)</span></label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">Rezept verknüpfen <span className="text-gray-400 font-normal">(optional)</span></label>
                 <select
                   value={form.recipe_id}
                   onChange={e => setForm(f => ({ ...f, recipe_id: e.target.value }))}
-                  className="w-full border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                  className="w-full border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
                   <option value="">Kein Rezept</option>
                   {recipes.map(r => (
@@ -321,12 +325,13 @@ export default function GerichtePage() {
                   ))}
                 </select>
                 {form.recipe_id && (
-                  <p className="text-xs text-amber-600 mt-1">Die Rezeptzutaten werden für die Einkaufsliste verwendet.</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Die Rezeptzutaten werden für die Einkaufsliste verwendet.</p>
                 )}
               </div>
+            </div>
 
-            <div className="p-4 border-t flex gap-3">
-              <button onClick={() => setShowForm(false)} className="flex-1 border rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-100">
+            <div className="p-4 border-t dark:border-gray-700 flex gap-3">
+              <button onClick={() => setShowForm(false)} className="flex-1 border dark:border-gray-600 rounded-lg py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                 Abbrechen
               </button>
               <button
