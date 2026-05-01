@@ -176,8 +176,8 @@ export default function HomePage() {
             <Link href="/gerichte" className="opacity-80 hover:opacity-100">Gerichte</Link>
             <Link href="/rezepte" className="opacity-80 hover:opacity-100">Rezepte</Link>
             <Link href="/einkaufsliste" className="opacity-80 hover:opacity-100">Einkauf</Link>
-            <button onClick={toggle} className="text-xs font-black uppercase tracking-wide px-2.5 py-1 rounded-lg border border-blue-500 text-blue-300 hover:bg-blue-800 hover:text-white transition-colors normal-case" title={dark ? 'Hellmodus' : 'Nachtmodus'}>
-              {dark ? 'Hell' : 'Nacht'}
+            <button onClick={toggle} className="text-lg px-2 py-1 rounded-lg border border-blue-500 text-blue-300 hover:bg-blue-800 hover:text-white transition-colors normal-case">
+              {dark ? '☀' : '☾'}
             </button>
           </div>
         </div>

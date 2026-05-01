@@ -29,6 +29,7 @@ export default function EinkaufslistePage() {
   const { dark, toggle } = useTheme()
   const [range, setRange] = useState(getDefaultRange)
   const [items, setItems] = useState<ShoppingItem[]>([])
+  const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [checked, setChecked] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -48,14 +49,18 @@ export default function EinkaufslistePage() {
   const loadList = useCallback(async () => {
     setLoading(true)
     const res = await fetch(`/api/shopping-list?week_start=${range.start}&week_end=${range.end}`)
-    setItems(await res.json())
+    const data: ShoppingItem[] = await res.json()
+    setItems(data)
+    const initial: Record<string, number> = {}
+    data.forEach(item => { initial[item.name] = item.count })
+    setQuantities(initial)
     setChecked(new Set())
     setLoading(false)
   }, [range.start, range.end])
 
   useEffect(() => { loadList() }, [loadList])
 
-  const toggle2 = (name: string) => {
+  const toggleChecked = (name: string) => {
     setChecked(prev => {
       const next = new Set(prev)
       next.has(name) ? next.delete(name) : next.add(name)
@@ -63,10 +68,19 @@ export default function EinkaufslistePage() {
     })
   }
 
+  const adjustQty = (name: string, delta: number) => {
+    setQuantities(prev => {
+      const current = prev[name] ?? 1
+      const next = Math.max(1, current + delta)
+      return { ...prev, [name]: next }
+    })
+  }
+
   const handleCopy = async () => {
     const text = items.map(item => {
-      const count = item.count > 1 ? ` ×${item.count}` : ''
-      return `• ${item.name}${count}`
+      const qty = quantities[item.name] ?? item.count
+      const suffix = qty > 1 ? ` ×${qty}` : ''
+      return `• ${item.name}${suffix}`
     }).join('\n')
     try {
       await navigator.clipboard.writeText(text)
@@ -77,6 +91,27 @@ export default function EinkaufslistePage() {
 
   const unchecked = items.filter(i => !checked.has(i.name))
   const done = items.filter(i => checked.has(i.name))
+
+  const QtyControl = ({ name }: { name: string }) => {
+    const qty = quantities[name] ?? 1
+    return (
+      <div className="flex items-center gap-1 shrink-0">
+        <button
+          onClick={e => { e.stopPropagation(); adjustQty(name, -1) }}
+          className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900/40 hover:text-red-500 text-sm font-black flex items-center justify-center transition-colors"
+        >
+          −
+        </button>
+        <span className="w-5 text-center text-sm font-bold text-gray-600 dark:text-gray-300">{qty}</span>
+        <button
+          onClick={e => { e.stopPropagation(); adjustQty(name, +1) }}
+          className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-green-100 dark:hover:bg-green-900/40 hover:text-green-600 text-sm font-black flex items-center justify-center transition-colors"
+        >
+          +
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -91,8 +126,8 @@ export default function EinkaufslistePage() {
             {copied ? 'Kopiert!' : 'Kopieren'}
           </button>
         )}
-        <button onClick={toggle} className="text-xs font-black uppercase tracking-wide px-2.5 py-1 rounded-lg border border-blue-500 text-blue-300 hover:bg-blue-800 hover:text-white transition-colors">
-          {dark ? 'Hell' : 'Nacht'}
+        <button onClick={toggle} className="text-lg px-2 py-1 rounded-lg border border-blue-500 text-blue-300 hover:bg-blue-800 hover:text-white transition-colors">
+          {dark ? '☀' : '☾'}
         </button>
       </header>
 
@@ -137,31 +172,34 @@ export default function EinkaufslistePage() {
           <>
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden">
               {unchecked.map(item => (
-                <button
+                <div
                   key={item.name}
-                  onClick={() => toggle2(item.name)}
-                  className="w-full flex items-center gap-3 px-4 py-3 border-b last:border-0 border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-left"
+                  className="flex items-center gap-3 px-4 py-3 border-b last:border-0 border-gray-100 dark:border-gray-700"
                 >
-                  <span className="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-500 shrink-0" />
+                  <button onClick={() => toggleChecked(item.name)} className="shrink-0">
+                    <span className="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-500 block" />
+                  </button>
                   <span className="flex-1 text-sm capitalize dark:text-gray-200">{item.name}</span>
-                  {item.count > 1 && <span className="text-xs text-gray-400">×{item.count}</span>}
-                </button>
+                  <QtyControl name={item.name} />
+                </div>
               ))}
             </div>
 
             {done.length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden opacity-50">
                 {done.map(item => (
-                  <button
+                  <div
                     key={item.name}
-                    onClick={() => toggle2(item.name)}
-                    className="w-full flex items-center gap-3 px-4 py-3 border-b last:border-0 border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-left"
+                    className="flex items-center gap-3 px-4 py-3 border-b last:border-0 border-gray-100 dark:border-gray-700"
                   >
-                    <span className="w-5 h-5 rounded border-2 border-red-600 bg-red-600 shrink-0 flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
-                    </span>
+                    <button onClick={() => toggleChecked(item.name)} className="shrink-0">
+                      <span className="w-5 h-5 rounded border-2 border-red-600 bg-red-600 flex items-center justify-center">
+                        <span className="text-white text-xs">✓</span>
+                      </span>
+                    </button>
                     <span className="flex-1 text-sm capitalize line-through text-gray-400">{item.name}</span>
-                  </button>
+                    <QtyControl name={item.name} />
+                  </div>
                 ))}
               </div>
             )}
