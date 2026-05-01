@@ -8,34 +8,47 @@ interface ShoppingItem {
   count: number
 }
 
-function getWeekDates(offset = 0) {
+const STORAGE_KEY = 'essensplan_range'
+
+function getDefaultRange() {
   const today = new Date()
-  const dayOfWeek = today.getDay() === 0 ? 6 : today.getDay() - 1
-  const monday = new Date(today)
-  monday.setDate(today.getDate() - dayOfWeek + offset * 7)
-  const sunday = new Date(monday)
-  sunday.setDate(monday.getDate() + 6)
-  return {
-    start: monday.toISOString().split('T')[0],
-    end: sunday.toISOString().split('T')[0],
-  }
+  const end = new Date(today)
+  end.setDate(today.getDate() + 6)
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return { start: fmt(today), end: fmt(end) }
+}
+
+function formatDisplay(dateStr: string) {
+  const [, m, d] = dateStr.split('-')
+  return `${Number(d)}.${Number(m)}.`
 }
 
 export default function EinkaufslistePage() {
-  const [weekOffset, setWeekOffset] = useState(0)
+  const [range, setRange] = useState(getDefaultRange)
   const [items, setItems] = useState<ShoppingItem[]>([])
   const [checked, setChecked] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
 
-  const week = getWeekDates(weekOffset)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) setRange(JSON.parse(saved))
+    } catch {}
+  }, [])
+
+  const updateRange = (next: { start: string; end: string }) => {
+    setRange(next)
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
+  }
 
   const loadList = useCallback(async () => {
     setLoading(true)
-    const res = await fetch(`/api/shopping-list?week_start=${week.start}&week_end=${week.end}`)
+    const res = await fetch(`/api/shopping-list?week_start=${range.start}&week_end=${range.end}`)
     setItems(await res.json())
     setChecked(new Set())
     setLoading(false)
-  }, [week.start, week.end])
+  }, [range.start, range.end])
 
   useEffect(() => { loadList() }, [loadList])
 
@@ -46,12 +59,6 @@ export default function EinkaufslistePage() {
       return next
     })
   }
-
-  const weekLabel =
-    weekOffset === 0 ? 'Diese Woche' :
-    weekOffset === 1 ? 'Nächste Woche' :
-    weekOffset === -1 ? 'Letzte Woche' :
-    week.start
 
   const unchecked = items.filter(i => !checked.has(i.name))
   const done = items.filter(i => checked.has(i.name))
@@ -64,19 +71,40 @@ export default function EinkaufslistePage() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <button onClick={() => setWeekOffset(o => o - 1)} className="p-2 rounded-lg hover:bg-gray-200 text-gray-600">←</button>
-          <span className="font-semibold text-gray-700">{weekLabel}</span>
-          <button onClick={() => setWeekOffset(o => o + 1)} className="p-2 rounded-lg hover:bg-gray-200 text-gray-600">→</button>
+        <div className="bg-white rounded-2xl shadow-sm px-4 py-3">
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <label className="text-xs text-gray-400 block mb-1">Von</label>
+              <input
+                type="date"
+                value={range.start}
+                onChange={e => updateRange({ ...range, start: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs text-gray-400 block mb-1">Bis</label>
+              <input
+                type="date"
+                value={range.end}
+                min={range.start}
+                onChange={e => updateRange({ ...range, end: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-2">
+            {formatDisplay(range.start)} – {formatDisplay(range.end)}
+          </p>
         </div>
 
         {loading ? (
           <div className="text-center py-12 text-gray-400">Laden...</div>
         ) : items.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
-            <p>Noch keine Mahlzeiten geplant.</p>
+            <p>Keine Mahlzeiten im gewählten Zeitraum.</p>
             <Link href="/" className="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
-              Zum Wochenplan
+              Zum Essensplan
             </Link>
           </div>
         ) : (
@@ -90,9 +118,7 @@ export default function EinkaufslistePage() {
                 >
                   <span className="w-5 h-5 rounded border-2 border-gray-300 shrink-0" />
                   <span className="flex-1 text-sm capitalize">{item.name}</span>
-                  {item.count > 1 && (
-                    <span className="text-xs text-gray-400">×{item.count}</span>
-                  )}
+                  {item.count > 1 && <span className="text-xs text-gray-400">×{item.count}</span>}
                 </button>
               ))}
             </div>
@@ -114,7 +140,7 @@ export default function EinkaufslistePage() {
               </div>
             )}
 
-            <p className="text-center text-xs text-gray-400">{items.length} Zutaten aus dem Wochenplan</p>
+            <p className="text-center text-xs text-gray-400">{items.length} Zutaten aus dem Essensplan</p>
           </>
         )}
       </main>
