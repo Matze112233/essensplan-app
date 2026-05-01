@@ -11,12 +11,13 @@ interface Props {
   onAssign: (date: string, mealType: MealType, dish: Dish) => void
   onRemove: (entry: MealPlanEntry) => void
   onExtrasChange: (entry: MealPlanEntry, extras: MealPlanExtra[]) => void
+  onDishCreated?: (dish: Dish) => void
 }
 
 interface ActiveSlot { date: string; mealType: MealType }
 interface ExtrasModal { entry: MealPlanEntry; inputs: string[] }
 
-export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasChange }: Props) {
+export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasChange, onDishCreated }: Props) {
   const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null)
   const [extrasModal, setExtrasModal] = useState<ExtrasModal | null>(null)
   const [savingExtras, setSavingExtras] = useState(false)
@@ -66,9 +67,8 @@ export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasC
       <div className="space-y-3">
         {week.map(day => (
           <div key={day.date} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-950 to-blue-900 text-white px-4 py-2.5 flex items-center gap-2">
+            <div className="bg-gradient-to-r from-blue-950 to-blue-900 text-white px-4 py-2.5">
               <span className="font-black text-sm uppercase tracking-wide">{day.label}</span>
-              <span className="ml-auto w-2 h-2 rounded-full bg-red-500" />
             </div>
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {(['mittag', 'abend'] as MealType[]).map(mealType => {
@@ -130,6 +130,7 @@ export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasC
           mealType={activeSlot.mealType}
           onSelect={handleSelect}
           onClose={() => setActiveSlot(null)}
+          onDishCreated={onDishCreated}
         />
       )}
 

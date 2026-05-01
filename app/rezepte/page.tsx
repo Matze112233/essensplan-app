@@ -99,8 +99,8 @@ export default function RezeptePage() {
       <header className="bg-gradient-to-r from-blue-950 to-blue-900 text-white px-4 py-4 flex items-center gap-3 sticky top-0 z-10 shadow-lg">
         <Link href="/" className="text-blue-300 hover:text-white text-lg font-black">←</Link>
         <h1 className="text-xl font-black uppercase tracking-tight flex-1">Rezepte</h1>
-        <button onClick={toggle} className="text-blue-300 hover:text-white text-lg transition-colors" title={dark ? 'Hellmodus' : 'Nachtmodus'}>
-          {dark ? '☀' : '☾'}
+        <button onClick={toggle} className="text-xs font-black uppercase tracking-wide px-2.5 py-1 rounded-lg border border-blue-500 text-blue-300 hover:bg-blue-800 hover:text-white transition-colors">
+          {dark ? 'Hell' : 'Nacht'}
         </button>
         <button onClick={openNew} className="bg-red-600 hover:bg-red-700 text-white text-sm font-black uppercase tracking-wide px-3 py-1.5 rounded-xl transition-colors">
           + Neu

@@ -176,8 +176,8 @@ export default function HomePage() {
             <Link href="/gerichte" className="opacity-80 hover:opacity-100">Gerichte</Link>
             <Link href="/rezepte" className="opacity-80 hover:opacity-100">Rezepte</Link>
             <Link href="/einkaufsliste" className="opacity-80 hover:opacity-100">Einkauf</Link>
-            <button onClick={toggle} className="text-blue-300 hover:text-white text-base transition-colors normal-case" title={dark ? 'Hellmodus' : 'Nachtmodus'}>
-              {dark ? '☀' : '☾'}
+            <button onClick={toggle} className="text-xs font-black uppercase tracking-wide px-2.5 py-1 rounded-lg border border-blue-500 text-blue-300 hover:bg-blue-800 hover:text-white transition-colors normal-case" title={dark ? 'Hellmodus' : 'Nachtmodus'}>
+              {dark ? 'Hell' : 'Nacht'}
             </button>
           </div>
         </div>
@@ -228,7 +228,14 @@ export default function HomePage() {
         {loading ? (
           <div className="text-center py-12 text-gray-400 font-bold uppercase tracking-wide text-sm">Laden...</div>
         ) : (
-          <WeeklyPlan week={weekDays} dishes={dishes} onAssign={handleAssign} onRemove={handleRemove} onExtrasChange={handleExtrasChange} />
+          <WeeklyPlan
+            week={weekDays}
+            dishes={dishes}
+            onAssign={handleAssign}
+            onRemove={handleRemove}
+            onExtrasChange={handleExtrasChange}
+            onDishCreated={dish => setDishes(prev => [...prev, dish])}
+          />
         )}
       </main>
     </div>

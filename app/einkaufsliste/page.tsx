@@ -91,8 +91,8 @@ export default function EinkaufslistePage() {
             {copied ? 'Kopiert!' : 'Kopieren'}
           </button>
         )}
-        <button onClick={toggle} className="text-blue-300 hover:text-white text-lg transition-colors" title={dark ? 'Hellmodus' : 'Nachtmodus'}>
-          {dark ? '☀' : '☾'}
+        <button onClick={toggle} className="text-xs font-black uppercase tracking-wide px-2.5 py-1 rounded-lg border border-blue-500 text-blue-300 hover:bg-blue-800 hover:text-white transition-colors">
+          {dark ? 'Hell' : 'Nacht'}
         </button>
       </header>
 
