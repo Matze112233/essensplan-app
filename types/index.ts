@@ -33,12 +33,19 @@ export interface Dish {
   created_at: string
 }
 
+export interface MealPlanExtra {
+  id: string
+  entry_id: string
+  name: string
+}
+
 export interface MealPlanEntry {
   id: string
   date: string // ISO date string: YYYY-MM-DD
   meal_type: MealType
   dish_id: string
   dish?: Dish
+  meal_plan_extras: MealPlanExtra[]
 }
 
 export interface WeekDay {

@@ -8,7 +8,7 @@ export async function GET(request: Request) {
 
   let query = supabase
     .from('meal_plan_entries')
-    .select('*, dish:dishes(*, ingredients(*))')
+    .select('*, dish:dishes(*, ingredients(*)), meal_plan_extras(*)')
 
   if (weekStart && weekEnd) {
     query = query.gte('date', weekStart).lte('date', weekEnd)
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   const { data, error } = await supabase
     .from('meal_plan_entries')
     .insert({ date, meal_type, dish_id })
-    .select('*, dish:dishes(*, ingredients(*))')
+    .select('*, dish:dishes(*, ingredients(*)), meal_plan_extras(*)')
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

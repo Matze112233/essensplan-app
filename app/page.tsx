@@ -73,6 +73,10 @@ export default function HomePage() {
     setEntries(prev => prev.filter(e => e.id !== entry.id))
   }
 
+  const handleExtrasChange = (entry: MealPlanEntry, extras: MealPlanEntry['meal_plan_extras']) => {
+    setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, meal_plan_extras: extras } : e))
+  }
+
   const weekLabel =
     weekOffset === 0 ? 'Diese Woche' :
     weekOffset === 1 ? 'Nächste Woche' :
@@ -104,7 +108,7 @@ export default function HomePage() {
         {loading ? (
           <div className="text-center py-12 text-gray-400">Laden...</div>
         ) : (
-          <WeeklyPlan week={weekDays} dishes={dishes} onAssign={handleAssign} onRemove={handleRemove} />
+          <WeeklyPlan week={weekDays} dishes={dishes} onAssign={handleAssign} onRemove={handleRemove} onExtrasChange={handleExtrasChange} />
         )}
       </main>
     </div>
