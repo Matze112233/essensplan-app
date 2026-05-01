@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 export async function GET() {
   const { data, error } = await supabase
     .from('dishes')
-    .select('*, ingredients(*)')
+    .select('*, ingredients(*), recipe:recipes(*, recipe_ingredients(*))')
     .order('name')
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -13,11 +13,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const body = await request.json()
-  const { name, suitable_for, ingredients } = body
+  const { name, suitable_for, ingredients, recipe_id } = body
 
   const { data: dish, error: dishError } = await supabase
     .from('dishes')
-    .insert({ name, suitable_for })
+    .insert({ name, suitable_for, recipe_id: recipe_id || null })
     .select()
     .single()
 
@@ -31,7 +31,6 @@ export async function POST(request: Request) {
         name: i.name.trim(),
         category: i.category ?? null,
       }))
-
     if (ingredientRows.length > 0) {
       const { error: ingError } = await supabase.from('ingredients').insert(ingredientRows)
       if (ingError) return NextResponse.json({ error: ingError.message }, { status: 500 })
@@ -40,7 +39,7 @@ export async function POST(request: Request) {
 
   const { data: full } = await supabase
     .from('dishes')
-    .select('*, ingredients(*)')
+    .select('*, ingredients(*), recipe:recipes(*, recipe_ingredients(*))')
     .eq('id', dish.id)
     .single()
 

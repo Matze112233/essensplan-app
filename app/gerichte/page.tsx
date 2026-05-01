@@ -1,6 +1,6 @@
 'use client'
 
-import { Dish, IngredientCategory, MealType } from '@/types'
+import { Dish, IngredientCategory, MealType, Recipe } from '@/types'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import IngredientList from '@/components/IngredientList'
@@ -15,6 +15,7 @@ interface DishForm {
   gemuse: string[]
   sosse: string[]
   extras: string[]
+  recipe_id: string
 }
 
 const emptyForm = (): DishForm => ({
@@ -25,6 +26,7 @@ const emptyForm = (): DishForm => ({
   gemuse: [''],
   sosse: [''],
   extras: [''],
+  recipe_id: '',
 })
 
 const CATEGORIES: { key: CatKey; label: string; color: string; category: IngredientCategory }[] = [
@@ -36,6 +38,7 @@ const CATEGORIES: { key: CatKey; label: string; color: string; category: Ingredi
 
 export default function GerichtePage() {
   const [dishes, setDishes] = useState<Dish[]>([])
+  const [recipes, setRecipes] = useState<Recipe[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -43,8 +46,12 @@ export default function GerichtePage() {
   const [saving, setSaving] = useState(false)
 
   const loadDishes = async () => {
-    const res = await fetch('/api/dishes')
-    setDishes(await res.json())
+    const [dishesRes, recipesRes] = await Promise.all([
+      fetch('/api/dishes'),
+      fetch('/api/recipes'),
+    ])
+    setDishes(await dishesRes.json())
+    setRecipes(await recipesRes.json())
     setLoading(false)
   }
 
@@ -71,6 +78,7 @@ export default function GerichtePage() {
       gemuse: byCategory('gemuse'),
       sosse: byCategory('sosse'),
       extras: extras.length ? [...extras, ''] : [''],
+      recipe_id: dish.recipe_id ?? '',
     })
     setShowForm(true)
   }
@@ -113,7 +121,7 @@ export default function GerichtePage() {
       if (extra.trim()) ingredients.push({ name: extra.trim(), category: null })
     }
 
-    const payload = { name: form.name.trim(), suitable_for: form.suitable_for, ingredients }
+    const payload = { name: form.name.trim(), suitable_for: form.suitable_for, ingredients, recipe_id: form.recipe_id || null }
 
     if (editingId) {
       await fetch(`/api/dishes/${editingId}`, {
@@ -262,6 +270,23 @@ export default function GerichtePage() {
                 </div>
               </div>
             </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Rezept verknüpfen <span className="text-gray-400 font-normal">(optional)</span></label>
+                <select
+                  value={form.recipe_id}
+                  onChange={e => setForm(f => ({ ...f, recipe_id: e.target.value }))}
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                >
+                  <option value="">Kein Rezept</option>
+                  {recipes.map(r => (
+                    <option key={r.id} value={r.id}>{r.title}</option>
+                  ))}
+                </select>
+                {form.recipe_id && (
+                  <p className="text-xs text-amber-600 mt-1">Die Rezeptzutaten werden für die Einkaufsliste verwendet.</p>
+                )}
+              </div>
 
             <div className="p-4 border-t flex gap-3">
               <button onClick={() => setShowForm(false)} className="flex-1 border rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50">

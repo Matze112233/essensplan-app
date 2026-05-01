@@ -8,7 +8,7 @@ export async function GET(request: Request) {
 
   let query = supabase
     .from('meal_plan_entries')
-    .select('dish:dishes(name, ingredients(name))')
+    .select('dish:dishes(name, ingredients(name), recipe:recipes(recipe_ingredients(name)))')
 
   if (weekStart && weekEnd) {
     query = query.gte('date', weekStart).lte('date', weekEnd)
@@ -18,9 +18,18 @@ export async function GET(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const ingredientCount: Record<string, number> = {}
+
   for (const entry of data as any[]) {
-    if (!entry.dish?.ingredients) continue
-    for (const ing of entry.dish.ingredients) {
+    const dish = entry.dish
+    if (!dish) continue
+
+    // Rezeptzutaten haben Vorrang, sonst Gerichtzutaten
+    const items: { name: string }[] =
+      dish.recipe?.recipe_ingredients?.length
+        ? dish.recipe.recipe_ingredients
+        : dish.ingredients ?? []
+
+    for (const ing of items) {
       const key = ing.name.toLowerCase()
       ingredientCount[key] = (ingredientCount[key] || 0) + 1
     }

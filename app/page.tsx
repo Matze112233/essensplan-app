@@ -85,6 +85,7 @@ export default function HomePage() {
         <h1 className="text-xl font-bold">Essensplan</h1>
         <div className="flex gap-4 text-sm font-medium">
           <Link href="/gerichte" className="opacity-90 hover:opacity-100">Gerichte</Link>
+          <Link href="/rezepte" className="opacity-90 hover:opacity-100">Rezepte</Link>
           <Link href="/einkaufsliste" className="opacity-90 hover:opacity-100">Einkauf</Link>
         </div>
       </header>

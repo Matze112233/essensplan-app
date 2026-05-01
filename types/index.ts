@@ -9,11 +9,27 @@ export interface Ingredient {
   category: IngredientCategory
 }
 
+export interface RecipeIngredient {
+  id: string
+  recipe_id: string
+  name: string
+}
+
+export interface Recipe {
+  id: string
+  title: string
+  instructions: string | null
+  recipe_ingredients: RecipeIngredient[]
+  created_at: string
+}
+
 export interface Dish {
   id: string
   name: string
   suitable_for: MealType | 'both'
   ingredients: Ingredient[]
+  recipe_id: string | null
+  recipe?: Recipe
   created_at: string
 }
 
