@@ -16,7 +16,10 @@ export default function DishSelector({ dishes, mealType, onSelect, onClose }: Pr
 
   const filtered = dishes.filter(d => {
     const matchesMeal = d.suitable_for === 'both' || d.suitable_for === mealType
-    const matchesSearch = d.name.toLowerCase().includes(search.toLowerCase())
+    const q = search.toLowerCase()
+    const matchesSearch = !q ||
+      d.name.toLowerCase().includes(q) ||
+      d.ingredients.some(i => i.name.toLowerCase().includes(q))
     return matchesMeal && matchesSearch
   })
 

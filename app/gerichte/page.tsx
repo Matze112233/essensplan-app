@@ -5,27 +5,29 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import IngredientList from '@/components/IngredientList'
 
+type CatKey = 'protein' | 'kohlenhydrat' | 'gemuse' | 'sosse'
+
 interface DishForm {
   name: string
   suitable_for: MealType | 'both'
-  protein: string
-  kohlenhydrat: string
-  gemuse: string
-  sosse: string
+  protein: string[]
+  kohlenhydrat: string[]
+  gemuse: string[]
+  sosse: string[]
   extras: string[]
 }
 
 const emptyForm = (): DishForm => ({
   name: '',
   suitable_for: 'both',
-  protein: '',
-  kohlenhydrat: '',
-  gemuse: '',
-  sosse: '',
+  protein: [''],
+  kohlenhydrat: [''],
+  gemuse: [''],
+  sosse: [''],
   extras: [''],
 })
 
-const CATEGORIES: { key: keyof Pick<DishForm, 'protein' | 'kohlenhydrat' | 'gemuse' | 'sosse'>; label: string; color: string; category: IngredientCategory }[] = [
+const CATEGORIES: { key: CatKey; label: string; color: string; category: IngredientCategory }[] = [
   { key: 'protein', label: 'Protein', color: 'bg-blue-500', category: 'protein' },
   { key: 'kohlenhydrat', label: 'Kohlenhydrat', color: 'bg-pink-500', category: 'kohlenhydrat' },
   { key: 'gemuse', label: 'Gemüse', color: 'bg-green-500', category: 'gemuse' },
@@ -56,17 +58,33 @@ export default function GerichtePage() {
 
   const openEdit = (dish: Dish) => {
     setEditingId(dish.id)
-    const categorized = Object.fromEntries(
-      CATEGORIES.map(c => [c.key, dish.ingredients.find(i => i.category === c.category)?.name ?? ''])
-    ) as Pick<DishForm, 'protein' | 'kohlenhydrat' | 'gemuse' | 'sosse'>
+    const byCategory = (cat: IngredientCategory) => {
+      const names = dish.ingredients.filter(i => i.category === cat).map(i => i.name)
+      return names.length ? [...names, ''] : ['']
+    }
     const extras = dish.ingredients.filter(i => !i.category).map(i => i.name)
     setForm({
       name: dish.name,
       suitable_for: dish.suitable_for,
-      ...categorized,
-      extras: extras.length > 0 ? [...extras, ''] : [''],
+      protein: byCategory('protein'),
+      kohlenhydrat: byCategory('kohlenhydrat'),
+      gemuse: byCategory('gemuse'),
+      sosse: byCategory('sosse'),
+      extras: extras.length ? [...extras, ''] : [''],
     })
     setShowForm(true)
+  }
+
+  const handleCatChange = (key: CatKey, index: number, value: string) => {
+    const updated = [...form[key]]
+    updated[index] = value
+    if (index === updated.length - 1 && value) updated.push('')
+    setForm(f => ({ ...f, [key]: updated }))
+  }
+
+  const removeCatItem = (key: CatKey, index: number) => {
+    const updated = form[key].filter((_, i) => i !== index)
+    setForm(f => ({ ...f, [key]: updated.length ? updated : [''] }))
   }
 
   const handleExtraChange = (index: number, value: string) => {
@@ -77,7 +95,8 @@ export default function GerichtePage() {
   }
 
   const removeExtra = (index: number) => {
-    setForm(f => ({ ...f, extras: f.extras.filter((_, i) => i !== index) }))
+    const updated = form.extras.filter((_, i) => i !== index)
+    setForm(f => ({ ...f, extras: updated.length ? updated : [''] }))
   }
 
   const handleSave = async () => {
@@ -86,8 +105,8 @@ export default function GerichtePage() {
 
     const ingredients: { name: string; category: IngredientCategory }[] = []
     for (const cat of CATEGORIES) {
-      if (form[cat.key].trim()) {
-        ingredients.push({ name: form[cat.key].trim(), category: cat.category })
+      for (const name of form[cat.key]) {
+        if (name.trim()) ingredients.push({ name: name.trim(), category: cat.category })
       }
     }
     for (const extra of form.extras) {
@@ -194,24 +213,32 @@ export default function GerichtePage() {
                 </select>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-2">Bestandteile</label>
-                <div className="space-y-2">
-                  {CATEGORIES.map(cat => (
-                    <div key={cat.key} className="flex items-center gap-2">
-                      <span className={`w-3 h-3 rounded-full shrink-0 ${cat.color}`} />
-                      <span className="text-xs text-gray-500 w-24 shrink-0">{cat.label}</span>
-                      <input
-                        type="text"
-                        value={form[cat.key]}
-                        onChange={e => setForm(f => ({ ...f, [cat.key]: e.target.value }))}
-                        placeholder="optional"
-                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
-                      />
-                    </div>
-                  ))}
+              {CATEGORIES.map(cat => (
+                <div key={cat.key}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`w-3 h-3 rounded-full shrink-0 ${cat.color}`} />
+                    <label className="text-sm font-medium text-gray-700">{cat.label}</label>
+                  </div>
+                  <div className="space-y-2 pl-5">
+                    {form[cat.key].map((val, i) => (
+                      <div key={i} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={val}
+                          onChange={e => handleCatChange(cat.key, i, e.target.value)}
+                          placeholder="optional"
+                          className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                        />
+                        {form[cat.key].length > 1 && (
+                          <button onClick={() => removeCatItem(cat.key, i)} className="text-gray-300 hover:text-red-400 text-xl leading-none px-1">
+                            &times;
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ))}
 
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-2">Weitere Zutaten</label>
