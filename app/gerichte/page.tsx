@@ -29,11 +29,11 @@ const emptyForm = (): DishForm => ({
   recipe_id: '',
 })
 
-const CATEGORIES: { key: CatKey; label: string; color: string; category: IngredientCategory }[] = [
-  { key: 'protein', label: 'Protein', color: 'bg-blue-500', category: 'protein' },
-  { key: 'kohlenhydrat', label: 'Kohlenhydrat', color: 'bg-pink-500', category: 'kohlenhydrat' },
-  { key: 'gemuse', label: 'Gemüse', color: 'bg-green-500', category: 'gemuse' },
-  { key: 'sosse', label: 'Soße', color: 'bg-red-500', category: 'sosse' },
+const CATEGORIES: { key: CatKey; label: string; color: string; activeClass: string; category: IngredientCategory }[] = [
+  { key: 'protein', label: 'Protein', color: 'bg-blue-500', activeClass: 'bg-blue-500 text-white border-blue-500', category: 'protein' },
+  { key: 'kohlenhydrat', label: 'Kohlenhydrat', color: 'bg-pink-500', activeClass: 'bg-pink-500 text-white border-pink-500', category: 'kohlenhydrat' },
+  { key: 'gemuse', label: 'Gemüse', color: 'bg-green-500', activeClass: 'bg-green-500 text-white border-green-500', category: 'gemuse' },
+  { key: 'sosse', label: 'Soße', color: 'bg-red-500', activeClass: 'bg-red-500 text-white border-red-500', category: 'sosse' },
 ]
 
 export default function GerichtePage() {
@@ -44,6 +44,26 @@ export default function GerichtePage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<DishForm>(emptyForm())
   const [saving, setSaving] = useState(false)
+  const [search, setSearch] = useState('')
+  const [activeCategories, setActiveCategories] = useState<Set<string>>(new Set())
+
+  const toggleCategory = (cat: string) => {
+    setActiveCategories(prev => {
+      const next = new Set(prev)
+      next.has(cat) ? next.delete(cat) : next.add(cat)
+      return next
+    })
+  }
+
+  const filteredDishes = dishes.filter(dish => {
+    const q = search.toLowerCase()
+    const matchesSearch = !q ||
+      dish.name.toLowerCase().includes(q) ||
+      dish.ingredients.some(i => i.name.toLowerCase().includes(q))
+    const matchesCategories = activeCategories.size === 0 ||
+      [...activeCategories].every(cat => dish.ingredients.some(i => i.category === cat))
+    return matchesSearch && matchesCategories
+  })
 
   const loadDishes = async () => {
     const [dishesRes, recipesRes] = await Promise.all([
@@ -161,17 +181,65 @@ export default function GerichtePage() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-3">
+        {!loading && dishes.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-md p-3 space-y-2 border-l-4 border-blue-900">
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Gericht oder Zutat suchen..."
+              className="w-full border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
+            />
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map(cat => {
+                const active = activeCategories.has(cat.category as string)
+                return (
+                  <button
+                    key={cat.key}
+                    onClick={() => toggleCategory(cat.category as string)}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wide border-2 transition-all ${
+                      active ? cat.activeClass : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${cat.color}`} />
+                    {cat.label}
+                    {active && <span className="ml-0.5">×</span>}
+                  </button>
+                )
+              })}
+              {(search || activeCategories.size > 0) && (
+                <button
+                  onClick={() => { setSearch(''); setActiveCategories(new Set()) }}
+                  className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wide text-red-500 border-2 border-red-200 hover:border-red-400 transition-all"
+                >
+                  Zurücksetzen
+                </button>
+              )}
+            </div>
+            {(search || activeCategories.size > 0) && (
+              <p className="text-xs text-gray-400">{filteredDishes.length} von {dishes.length} Gerichten</p>
+            )}
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-12 text-gray-400">Laden...</div>
         ) : dishes.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
             <p>Noch keine Gerichte angelegt.</p>
-            <button onClick={openNew} className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
+            <button onClick={openNew} className="mt-4 bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-black uppercase tracking-wide">
               Erstes Gericht anlegen
             </button>
           </div>
+        ) : filteredDishes.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">
+            <p className="text-sm">Keine Gerichte gefunden.</p>
+            <button onClick={() => { setSearch(''); setActiveCategories(new Set()) }} className="mt-2 text-red-500 text-sm font-bold">
+              Filter zurücksetzen
+            </button>
+          </div>
         ) : (
-          dishes.map(dish => (
+          filteredDishes.map(dish => (
             <div key={dish.id} className="bg-white rounded-2xl shadow-md px-4 py-3 flex items-start gap-3 border-l-4 border-transparent hover:border-red-500 transition-all">
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-sm text-blue-950">{dish.name}</div>
