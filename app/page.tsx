@@ -169,17 +169,17 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <header className="bg-gradient-to-r from-blue-950 to-blue-900 text-white px-4 py-4 sticky top-0 z-10 shadow-lg">
+      <header className="bg-gradient-to-r from-blue-950 to-blue-900 text-white px-4 pt-4 pb-3 sticky top-0 z-10 shadow-lg space-y-3">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-black tracking-tight uppercase">Essensplan</h1>
-          <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-wide">
-            <Link href="/gerichte" className="opacity-80 hover:opacity-100">Gerichte</Link>
-            <Link href="/rezepte" className="opacity-80 hover:opacity-100">Rezepte</Link>
-            <Link href="/einkaufsliste" className="opacity-80 hover:opacity-100">Einkauf</Link>
-            <button onClick={toggle} className="text-lg px-2 py-1 rounded-lg border border-blue-500 text-blue-300 hover:bg-blue-800 hover:text-white transition-colors normal-case">
-              {dark ? '☀' : '☾'}
-            </button>
-          </div>
+          <button onClick={toggle} className="text-lg px-2 py-1 rounded-lg border border-blue-500 text-blue-300 hover:bg-blue-800 hover:text-white transition-colors">
+            {dark ? '☀' : '☾'}
+          </button>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/gerichte" className="flex-1 text-center text-xs font-black uppercase tracking-wide px-2 py-1.5 rounded-lg border border-blue-500 text-blue-200 hover:bg-blue-800 hover:text-white transition-colors">Gerichte</Link>
+          <Link href="/rezepte" className="flex-1 text-center text-xs font-black uppercase tracking-wide px-2 py-1.5 rounded-lg border border-blue-500 text-blue-200 hover:bg-blue-800 hover:text-white transition-colors">Rezepte</Link>
+          <Link href="/einkaufsliste" className="flex-1 text-center text-xs font-black uppercase tracking-wide px-2 py-1.5 rounded-lg border border-blue-500 text-blue-200 hover:bg-blue-800 hover:text-white transition-colors">Einkauf</Link>
         </div>
       </header>
 
