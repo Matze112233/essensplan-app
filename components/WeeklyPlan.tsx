@@ -3,6 +3,7 @@
 import { Dish, MealPlanEntry, MealType, WeekDay } from '@/types'
 import { useState } from 'react'
 import DishSelector from './DishSelector'
+import IngredientList from './IngredientList'
 
 interface Props {
   week: WeekDay[]
@@ -45,10 +46,8 @@ export default function WeeklyPlan({ week, dishes, onAssign, onRemove }: Props) 
                       <div className="flex-1 flex items-center justify-between gap-2">
                         <div>
                           <div className="text-sm font-medium">{entry.dish?.name}</div>
-                          {entry.dish && entry.dish.ingredients.length > 0 && (
-                            <div className="text-xs text-gray-400">
-                              {entry.dish.ingredients.map(i => i.name).join(', ')}
-                            </div>
+                          {entry.dish && (
+                            <IngredientList ingredients={entry.dish.ingredients} className="text-xs text-gray-400 mt-0.5" />
                           )}
                         </div>
                         <button

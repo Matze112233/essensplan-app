@@ -17,8 +17,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   if (ingredients && ingredients.length > 0) {
     const ingredientRows = ingredients
-      .filter((i: string) => i.trim())
-      .map((name: string) => ({ dish_id: id, name: name.trim() }))
+      .filter((i: { name: string; category: string | null }) => i.name.trim())
+      .map((i: { name: string; category: string | null }) => ({
+        dish_id: id,
+        name: i.name.trim(),
+        category: i.category ?? null,
+      }))
 
     if (ingredientRows.length > 0) {
       const { error: ingError } = await supabase.from('ingredients').insert(ingredientRows)

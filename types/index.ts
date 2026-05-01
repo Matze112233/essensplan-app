@@ -1,9 +1,12 @@
 export type MealType = 'mittag' | 'abend'
 
+export type IngredientCategory = 'protein' | 'kohlenhydrat' | 'gemuse' | 'sosse' | null
+
 export interface Ingredient {
   id: string
   dish_id: string
   name: string
+  category: IngredientCategory
 }
 
 export interface Dish {

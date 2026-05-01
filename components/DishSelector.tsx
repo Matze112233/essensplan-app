@@ -2,6 +2,7 @@
 
 import { Dish, MealType } from '@/types'
 import { useState } from 'react'
+import IngredientList from './IngredientList'
 
 interface Props {
   dishes: Dish[]
@@ -60,11 +61,7 @@ export default function DishSelector({ dishes, mealType, onSelect, onClose }: Pr
                 className="w-full text-left px-4 py-3 rounded-xl hover:bg-green-50 transition-colors"
               >
                 <div className="font-medium text-sm">{dish.name}</div>
-                {dish.ingredients.length > 0 && (
-                  <div className="text-xs text-gray-400 mt-0.5">
-                    {dish.ingredients.map(i => i.name).join(', ')}
-                  </div>
-                )}
+                <IngredientList ingredients={dish.ingredients} className="text-xs text-gray-400 mt-0.5" />
               </button>
             ))
           )}
