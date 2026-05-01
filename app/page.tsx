@@ -104,50 +104,52 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-green-600 text-white px-4 py-4 flex items-center justify-between sticky top-0 z-10 shadow">
-        <h1 className="text-xl font-bold">Essensplan</h1>
-        <div className="flex gap-4 text-sm font-medium">
-          <Link href="/gerichte" className="opacity-90 hover:opacity-100">Gerichte</Link>
-          <Link href="/rezepte" className="opacity-90 hover:opacity-100">Rezepte</Link>
-          <Link href="/einkaufsliste" className="opacity-90 hover:opacity-100">Einkauf</Link>
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-gradient-to-r from-blue-950 to-blue-900 text-white px-4 py-4 sticky top-0 z-10 shadow-lg">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-black tracking-tight uppercase">🏀 Essensplan</h1>
+          <div className="flex gap-4 text-xs font-bold uppercase tracking-wide">
+            <Link href="/gerichte" className="opacity-80 hover:opacity-100">Gerichte</Link>
+            <Link href="/rezepte" className="opacity-80 hover:opacity-100">Rezepte</Link>
+            <Link href="/einkaufsliste" className="opacity-80 hover:opacity-100">Einkauf</Link>
+          </div>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
-        <div className="bg-white rounded-2xl shadow-sm px-4 py-3 space-y-2">
+        <div className="bg-white rounded-2xl shadow-md px-4 py-3 space-y-2 border-l-4 border-red-600">
           <div className="flex items-center gap-2">
             <div className="flex-1">
-              <label className="text-xs text-gray-400 block mb-1">Von</label>
+              <label className="text-xs text-gray-400 font-bold uppercase tracking-wide block mb-1">Von</label>
               <input
                 type="date"
                 value={range.start}
                 onChange={e => updateRange({ ...range, start: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                className="w-full border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
               />
             </div>
             <div className="flex-1">
-              <label className="text-xs text-gray-400 block mb-1">Bis</label>
+              <label className="text-xs text-gray-400 font-bold uppercase tracking-wide block mb-1">Bis</label>
               <input
                 type="date"
                 value={range.end}
                 min={range.start}
                 onChange={e => updateRange({ ...range, end: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                className="w-full border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
               />
             </div>
             <button
               onClick={resetToday}
-              className="mt-5 text-xs text-green-600 hover:text-green-700 font-medium whitespace-nowrap"
+              className="mt-5 text-xs text-amber-500 hover:text-amber-600 font-black uppercase tracking-wide whitespace-nowrap"
             >
               Heute
             </button>
           </div>
-          <p className="text-xs text-gray-400">{days.length} {days.length === 1 ? 'Tag' : 'Tage'}</p>
+          <p className="text-xs text-gray-400 font-medium">{days.length} {days.length === 1 ? 'Tag' : 'Tage'}</p>
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-gray-400">Laden...</div>
+          <div className="text-center py-12 text-gray-400 font-bold uppercase tracking-wide text-sm">Laden...</div>
         ) : (
           <WeeklyPlan week={weekDays} dishes={dishes} onAssign={handleAssign} onRemove={handleRemove} onExtrasChange={handleExtrasChange} />
         )}

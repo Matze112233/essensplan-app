@@ -93,11 +93,11 @@ export default function RezeptePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-green-600 text-white px-4 py-4 flex items-center gap-3 sticky top-0 z-10 shadow">
-        <Link href="/" className="text-white opacity-80 hover:opacity-100">←</Link>
-        <h1 className="text-xl font-bold flex-1">Rezepte</h1>
-        <button onClick={openNew} className="bg-white text-green-700 text-sm font-semibold px-3 py-1.5 rounded-lg">
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-gradient-to-r from-blue-950 to-blue-900 text-white px-4 py-4 flex items-center gap-3 sticky top-0 z-10 shadow-lg">
+        <Link href="/" className="text-blue-300 hover:text-white text-lg font-black">←</Link>
+        <h1 className="text-xl font-black uppercase tracking-tight flex-1">Rezepte</h1>
+        <button onClick={openNew} className="bg-red-600 hover:bg-red-700 text-white text-sm font-black uppercase tracking-wide px-3 py-1.5 rounded-xl transition-colors">
           + Neu
         </button>
       </header>
@@ -161,11 +161,11 @@ export default function RezeptePage() {
       </main>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col">
-            <div className="p-4 border-b flex items-center justify-between">
-              <h2 className="font-semibold text-lg">{editingId ? 'Rezept bearbeiten' : 'Neues Rezept'}</h2>
-              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            <div className="bg-gradient-to-r from-blue-950 to-blue-900 text-white p-4 rounded-t-2xl flex items-center justify-between">
+              <h2 className="font-black text-lg uppercase tracking-wide">{editingId ? 'Rezept bearbeiten' : 'Neues Rezept'}</h2>
+              <button onClick={() => setShowForm(false)} className="text-blue-300 hover:text-white text-2xl leading-none">&times;</button>
             </div>
 
             <div className="overflow-y-auto flex-1 p-4 space-y-4">
@@ -176,7 +176,7 @@ export default function RezeptePage() {
                   value={form.title}
                   onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                   placeholder="z.B. Fischstäbchen klassisch"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
                   autoFocus
                 />
               </div>
@@ -191,7 +191,7 @@ export default function RezeptePage() {
                         value={ing}
                         onChange={e => handleIngredientChange(i, e.target.value)}
                         placeholder="z.B. 500g Fischstäbchen"
-                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
                       />
                       {form.ingredients.length > 1 && (
                         <button onClick={() => removeIngredient(i)} className="text-gray-300 hover:text-red-400 text-xl leading-none px-1">
@@ -210,19 +210,19 @@ export default function RezeptePage() {
                   onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))}
                   placeholder="Schritt für Schritt Anleitung..."
                   rows={6}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 resize-none"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
                 />
               </div>
             </div>
 
             <div className="p-4 border-t flex gap-3">
-              <button onClick={() => setShowForm(false)} className="flex-1 border rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50">
+              <button onClick={() => setShowForm(false)} className="flex-1 border rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-100">
                 Abbrechen
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving || !form.title.trim()}
-                className="flex-1 bg-green-600 text-white rounded-lg py-2 text-sm font-semibold disabled:opacity-50"
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-xl py-2 text-sm font-black uppercase tracking-wide disabled:opacity-50 transition-colors"
               >
                 {saving ? 'Speichern...' : 'Speichern'}
               </button>

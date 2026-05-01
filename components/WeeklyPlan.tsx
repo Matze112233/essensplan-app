@@ -65,29 +65,30 @@ export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasC
     <>
       <div className="space-y-3">
         {week.map(day => (
-          <div key={day.date} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="bg-green-600 text-white px-4 py-2 font-semibold text-sm">
-              {day.label}
+          <div key={day.date} className="bg-white rounded-2xl shadow-md overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-950 to-blue-900 text-white px-4 py-2.5 flex items-center gap-2">
+              <span className="font-black text-sm uppercase tracking-wide">{day.label}</span>
+              <span className="ml-auto w-2 h-2 rounded-full bg-red-500" />
             </div>
-            <div className="divide-y">
+            <div className="divide-y divide-gray-100">
               {(['mittag', 'abend'] as MealType[]).map(mealType => {
                 const entry = day[mealType]
                 return (
                   <div key={mealType} className="px-4 py-3 flex gap-3">
-                    <span className="text-xs font-medium text-gray-400 w-12 shrink-0 capitalize pt-0.5">
+                    <span className="text-xs font-black text-gray-300 uppercase tracking-wider w-12 shrink-0 pt-0.5">
                       {mealType}
                     </span>
                     {entry ? (
                       <div className="flex-1 flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium">{entry.dish?.name}</div>
+                          <div className="text-sm font-bold text-blue-950">{entry.dish?.name}</div>
                           {entry.dish && (
                             <IngredientList ingredients={entry.dish.ingredients} className="text-xs text-gray-400 mt-0.5" />
                           )}
                           {entry.meal_plan_extras.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {entry.meal_plan_extras.map(ex => (
-                                <span key={ex.id} className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">
+                                <span key={ex.id} className="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">
                                   {ex.name}
                                 </span>
                               ))}
@@ -95,14 +96,14 @@ export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasC
                           )}
                           <button
                             onClick={() => openExtras(entry)}
-                            className="text-xs text-gray-400 hover:text-green-600 mt-1"
+                            className="text-xs text-gray-300 hover:text-red-500 font-bold mt-1 transition-colors"
                           >
                             + Extras
                           </button>
                         </div>
                         <button
                           onClick={() => onRemove(entry)}
-                          className="text-gray-300 hover:text-red-400 text-xl leading-none shrink-0"
+                          className="text-gray-300 hover:text-red-500 text-xl leading-none shrink-0 transition-colors"
                         >
                           &times;
                         </button>
@@ -110,7 +111,7 @@ export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasC
                     ) : (
                       <button
                         onClick={() => setActiveSlot({ date: day.date, mealType })}
-                        className="flex-1 text-left text-sm text-gray-300 hover:text-green-600 transition-colors"
+                        className="flex-1 text-left text-sm text-gray-300 hover:text-red-500 font-semibold transition-colors"
                       >
                         + Gericht wählen
                       </button>
@@ -133,14 +134,14 @@ export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasC
       )}
 
       {extrasModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col">
-            <div className="p-4 border-b flex items-center justify-between">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl">
+            <div className="bg-gradient-to-r from-blue-950 to-blue-900 text-white p-4 rounded-t-2xl flex items-center justify-between">
               <div>
-                <h2 className="font-semibold text-lg">Extras</h2>
-                <p className="text-xs text-gray-400">{extrasModal.entry.dish?.name}</p>
+                <h2 className="font-black text-lg uppercase tracking-wide">Extras</h2>
+                <p className="text-xs text-blue-300">{extrasModal.entry.dish?.name}</p>
               </div>
-              <button onClick={() => setExtrasModal(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+              <button onClick={() => setExtrasModal(null)} className="text-blue-300 hover:text-white text-2xl leading-none">&times;</button>
             </div>
 
             <div className="overflow-y-auto flex-1 p-4 space-y-2">
@@ -151,11 +152,11 @@ export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasC
                     value={val}
                     onChange={e => handleInputChange(i, e.target.value)}
                     placeholder="z.B. Ketchup"
-                    className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="flex-1 border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
                     autoFocus={i === 0}
                   />
                   {extrasModal.inputs.length > 1 && (
-                    <button onClick={() => removeInput(i)} className="text-gray-300 hover:text-red-400 text-xl leading-none px-1">
+                    <button onClick={() => removeInput(i)} className="text-gray-300 hover:text-red-500 text-xl leading-none px-1">
                       &times;
                     </button>
                   )}
@@ -164,13 +165,13 @@ export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasC
             </div>
 
             <div className="p-4 border-t flex gap-3">
-              <button onClick={() => setExtrasModal(null)} className="flex-1 border rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50">
+              <button onClick={() => setExtrasModal(null)} className="flex-1 border-2 rounded-xl py-2 text-sm font-bold text-gray-600 hover:bg-gray-50">
                 Abbrechen
               </button>
               <button
                 onClick={saveExtras}
                 disabled={savingExtras}
-                className="flex-1 bg-green-600 text-white rounded-lg py-2 text-sm font-semibold disabled:opacity-50"
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-xl py-2 text-sm font-black uppercase tracking-wide disabled:opacity-50 transition-colors"
               >
                 {savingExtras ? 'Speichern...' : 'Speichern'}
               </button>
