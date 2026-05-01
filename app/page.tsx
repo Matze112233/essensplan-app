@@ -107,7 +107,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-gray-100">
       <header className="bg-gradient-to-r from-blue-950 to-blue-900 text-white px-4 py-4 sticky top-0 z-10 shadow-lg">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-black tracking-tight uppercase">🏀 Essensplan</h1>
+          <h1 className="text-xl font-black tracking-tight uppercase">Essensplan</h1>
           <div className="flex gap-4 text-xs font-bold uppercase tracking-wide">
             <Link href="/gerichte" className="opacity-80 hover:opacity-100">Gerichte</Link>
             <Link href="/rezepte" className="opacity-80 hover:opacity-100">Rezepte</Link>
