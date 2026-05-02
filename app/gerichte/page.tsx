@@ -37,31 +37,51 @@ const CATEGORIES: { key: CatKey; label: string; color: string; activeClass: stri
   { key: 'sosse', label: 'Soße', color: 'bg-red-500', activeClass: 'bg-red-500 text-white border-red-500', category: 'sosse' },
 ]
 
+type SortMode = 'name' | 'usage-desc' | 'usage-asc'
+
 export default function GerichtePage() {
   const { dark, toggle } = useTheme()
   const [dishes, setDishes] = useState<Dish[]>([])
   const [recipes, setRecipes] = useState<Recipe[]>([])
+  const [usage, setUsage] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<DishForm>(emptyForm())
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
+  const [sortMode, setSortMode] = useState<SortMode>('name')
 
-  const filteredDishes = dishes.filter(dish => {
-    const q = search.toLowerCase()
-    return !q ||
-      dish.name.toLowerCase().includes(q) ||
-      dish.ingredients.some(i => i.name.toLowerCase().includes(q))
-  })
+  const filteredDishes = dishes
+    .filter(dish => {
+      const q = search.toLowerCase()
+      return !q ||
+        dish.name.toLowerCase().includes(q) ||
+        dish.ingredients.some(i => i.name.toLowerCase().includes(q))
+    })
+    .sort((a, b) => {
+      if (sortMode === 'usage-desc') return (usage[b.id] ?? 0) - (usage[a.id] ?? 0)
+      if (sortMode === 'usage-asc') return (usage[a.id] ?? 0) - (usage[b.id] ?? 0)
+      return a.name.localeCompare(b.name)
+    })
+
+  const cycleSortMode = () => {
+    setSortMode(prev =>
+      prev === 'name' ? 'usage-desc' : prev === 'usage-desc' ? 'usage-asc' : 'name'
+    )
+  }
+
+  const sortLabel = sortMode === 'usage-desc' ? 'Häufig ↓' : sortMode === 'usage-asc' ? 'Selten ↓' : 'A–Z'
 
   const loadDishes = async () => {
-    const [dishesRes, recipesRes] = await Promise.all([
+    const [dishesRes, recipesRes, usageRes] = await Promise.all([
       fetch('/api/dishes'),
       fetch('/api/recipes'),
+      fetch('/api/dishes/usage'),
     ])
     setDishes(await dishesRes.json())
     setRecipes(await recipesRes.json())
+    setUsage(await usageRes.json())
     setLoading(false)
   }
 
@@ -189,6 +209,12 @@ export default function GerichtePage() {
                   &times;
                 </button>
               )}
+              <button
+                onClick={cycleSortMode}
+                className="shrink-0 border-2 border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 text-xs font-black text-gray-500 dark:text-gray-400 hover:border-red-400 hover:text-red-500 transition-colors whitespace-nowrap"
+              >
+                {sortLabel}
+              </button>
             </div>
             {search && (
               <p className="text-xs text-gray-400 px-1">{filteredDishes.length} von {dishes.length} Gerichten</p>
@@ -217,7 +243,12 @@ export default function GerichtePage() {
             <div key={dish.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md px-4 py-3 flex items-start gap-3 border-l-4 border-transparent hover:border-red-500 transition-all">
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-sm text-blue-950 dark:text-blue-200">{dish.name}</div>
-                <div className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide mt-0.5">{mealLabel(dish.suitable_for)}</div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <div className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide">{mealLabel(dish.suitable_for)}</div>
+                  <div className="text-xs text-gray-400 dark:text-gray-500">
+                    {usage[dish.id] ? `${usage[dish.id]}× verwendet` : 'noch nie'}
+                  </div>
+                </div>
                 <IngredientList ingredients={dish.ingredients} className="text-xs text-gray-400 mt-1" />
               </div>
               <div className="flex gap-2 shrink-0">

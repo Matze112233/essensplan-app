@@ -110,12 +110,6 @@ export default function HomePage() {
     if (autoFilling || dishes.length === 0) return
     setAutoFilling(true)
 
-    const usedIngredients = new Set<string>()
-    for (const entry of entries) {
-      const dish = dishes.find(d => d.id === entry.dish_id)
-      if (dish) dish.ingredients.forEach(i => usedIngredients.add(i.name.toLowerCase()))
-    }
-
     const newEntries: MealPlanEntry[] = []
 
     for (const day of days) {
@@ -132,13 +126,7 @@ export default function HomePage() {
         )
         if (candidates.length === 0) continue
 
-        const scored = candidates.map(d => ({
-          dish: d,
-          score: d.ingredients.filter(i => usedIngredients.has(i.name.toLowerCase())).length,
-        }))
-        const maxScore = Math.max(...scored.map(s => s.score))
-        const best = scored.filter(s => s.score === maxScore)
-        const chosen = best[Math.floor(Math.random() * best.length)].dish
+        const chosen = candidates[Math.floor(Math.random() * candidates.length)]
 
         const res = await fetch('/api/meal-plan', {
           method: 'POST',
@@ -149,7 +137,6 @@ export default function HomePage() {
         const newEntry: MealPlanEntry = await res.json()
         newEntries.push(newEntry)
         dayDishIds.add(chosen.id)
-        chosen.ingredients.forEach(i => usedIngredients.add(i.name.toLowerCase()))
       }
     }
 
