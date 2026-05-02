@@ -5,8 +5,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const weekStart = searchParams.get('week_start')
   const weekEnd = searchParams.get('week_end')
-  const startMeal = searchParams.get('start_meal') ?? 'mittag'
-  const endMeal = searchParams.get('end_meal') ?? 'abend'
+  const startMeal = searchParams.get('start_meal') ?? 'both'
 
   let query = supabase
     .from('meal_plan_entries')
@@ -30,8 +29,6 @@ export async function GET(request: Request) {
   for (const entry of (data as any[]).filter(e => {
     if (e.date === weekStart && startMeal === 'abend' && e.meal_type === 'mittag') return false
     if (e.date === weekStart && startMeal === 'mittag' && e.meal_type === 'abend') return false
-    if (e.date === weekEnd && endMeal === 'mittag' && e.meal_type === 'abend') return false
-    if (e.date === weekEnd && endMeal === 'abend' && e.meal_type === 'mittag') return false
     return true
   })) {
     const dish = entry.dish
