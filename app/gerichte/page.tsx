@@ -243,17 +243,17 @@ export default function GerichtePage() {
             <div key={dish.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md px-4 py-3 flex items-start gap-3 border-l-4 border-transparent hover:border-red-500 transition-all">
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-sm text-blue-950 dark:text-blue-200">{dish.name}</div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <div className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide">{mealLabel(dish.suitable_for)}</div>
-                  <div className="text-xs text-gray-400 dark:text-gray-500">
-                    {usage[dish.id] ? `${usage[dish.id]}× verwendet` : 'noch nie'}
-                  </div>
-                </div>
+                <div className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide mt-0.5">{mealLabel(dish.suitable_for)}</div>
                 <IngredientList ingredients={dish.ingredients} className="text-xs text-gray-400 mt-1" />
               </div>
-              <div className="flex gap-2 shrink-0">
-                <button onClick={() => openEdit(dish)} className="text-gray-400 hover:text-red-500 text-sm">Bearbeiten</button>
-                <button onClick={() => handleDelete(dish.id)} className="text-gray-400 hover:text-red-500 text-sm">Löschen</button>
+              <div className="flex flex-col items-end justify-between shrink-0 gap-1">
+                <div className="flex gap-2">
+                  <button onClick={() => openEdit(dish)} className="text-gray-400 hover:text-red-500 text-sm">Bearbeiten</button>
+                  <button onClick={() => handleDelete(dish.id)} className="text-gray-400 hover:text-red-500 text-sm">Löschen</button>
+                </div>
+                <div className="text-xs text-gray-300 dark:text-gray-600">
+                  {usage[dish.id] ? `${usage[dish.id]}×` : '—'}
+                </div>
               </div>
             </div>
           ))
