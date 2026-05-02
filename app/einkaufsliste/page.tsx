@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { useTheme } from '@/components/ThemeProvider'
+import { MealType } from '@/types'
 
 interface ShoppingItem {
   name: string
@@ -25,9 +26,30 @@ function formatDisplay(dateStr: string) {
   return `${Number(d)}.${Number(m)}.`
 }
 
+function MealToggle({ value, onChange }: { value: MealType; onChange: (v: MealType) => void }) {
+  return (
+    <div className="flex rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600 shrink-0">
+      <button
+        onClick={() => onChange('mittag')}
+        className={`px-2 py-1 text-xs font-black uppercase tracking-wide transition-colors ${value === 'mittag' ? 'bg-blue-900 text-white' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+      >
+        M
+      </button>
+      <button
+        onClick={() => onChange('abend')}
+        className={`px-2 py-1 text-xs font-black uppercase tracking-wide transition-colors ${value === 'abend' ? 'bg-blue-900 text-white' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+      >
+        A
+      </button>
+    </div>
+  )
+}
+
 export default function EinkaufslistePage() {
   const { dark, toggle } = useTheme()
   const [range, setRange] = useState(getDefaultRange)
+  const [startMeal, setStartMeal] = useState<MealType>('mittag')
+  const [endMeal, setEndMeal] = useState<MealType>('abend')
   const [items, setItems] = useState<ShoppingItem[]>([])
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [checked, setChecked] = useState<Set<string>>(new Set())
@@ -37,18 +59,39 @@ export default function EinkaufslistePage() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved) setRange(JSON.parse(saved))
+      if (saved) {
+        const data = JSON.parse(saved)
+        setRange({ start: data.start, end: data.end })
+        if (data.startMeal) setStartMeal(data.startMeal)
+        if (data.endMeal) setEndMeal(data.endMeal)
+      }
     } catch {}
   }, [])
 
+  const saveToStorage = (r: { start: string; end: string }, sm: MealType, em: MealType) => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...r, startMeal: sm, endMeal: em })) } catch {}
+  }
+
   const updateRange = (next: { start: string; end: string }) => {
     setRange(next)
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
+    saveToStorage(next, startMeal, endMeal)
+  }
+
+  const updateStartMeal = (meal: MealType) => {
+    setStartMeal(meal)
+    saveToStorage(range, meal, endMeal)
+  }
+
+  const updateEndMeal = (meal: MealType) => {
+    setEndMeal(meal)
+    saveToStorage(range, startMeal, meal)
   }
 
   const loadList = useCallback(async () => {
     setLoading(true)
-    const res = await fetch(`/api/shopping-list?week_start=${range.start}&week_end=${range.end}`)
+    const res = await fetch(
+      `/api/shopping-list?week_start=${range.start}&week_end=${range.end}&start_meal=${startMeal}&end_meal=${endMeal}`
+    )
     const data: ShoppingItem[] = await res.json()
     setItems(data)
     const initial: Record<string, number> = {}
@@ -56,7 +99,7 @@ export default function EinkaufslistePage() {
     setQuantities(initial)
     setChecked(new Set())
     setLoading(false)
-  }, [range.start, range.end])
+  }, [range.start, range.end, startMeal, endMeal])
 
   useEffect(() => { loadList() }, [loadList])
 
@@ -71,8 +114,7 @@ export default function EinkaufslistePage() {
   const adjustQty = (name: string, delta: number) => {
     setQuantities(prev => {
       const current = prev[name] ?? 1
-      const next = Math.max(1, current + delta)
-      return { ...prev, [name]: next }
+      return { ...prev, [name]: Math.max(1, current + delta) }
     })
   }
 
@@ -99,16 +141,12 @@ export default function EinkaufslistePage() {
         <button
           onClick={e => { e.stopPropagation(); adjustQty(name, -1) }}
           className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900/40 hover:text-red-500 text-sm font-black flex items-center justify-center transition-colors"
-        >
-          −
-        </button>
+        >−</button>
         <span className="w-5 text-center text-sm font-bold text-gray-600 dark:text-gray-300">{qty}</span>
         <button
           onClick={e => { e.stopPropagation(); adjustQty(name, +1) }}
           className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-green-100 dark:hover:bg-green-900/40 hover:text-green-600 text-sm font-black flex items-center justify-center transition-colors"
-        >
-          +
-        </button>
+        >+</button>
       </div>
     )
   }
@@ -132,8 +170,8 @@ export default function EinkaufslistePage() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md px-4 py-3 border-l-4 border-red-600">
-          <div className="flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md px-4 py-3 border-l-4 border-red-600 space-y-2">
+          <div className="flex items-end gap-2">
             <div className="flex-1">
               <label className="text-xs text-gray-400 dark:text-gray-500 block mb-1">Von</label>
               <input
@@ -143,6 +181,11 @@ export default function EinkaufslistePage() {
                 className="w-full border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
+            <div className="pb-1">
+              <MealToggle value={startMeal} onChange={updateStartMeal} />
+            </div>
+          </div>
+          <div className="flex items-end gap-2">
             <div className="flex-1">
               <label className="text-xs text-gray-400 dark:text-gray-500 block mb-1">Bis</label>
               <input
@@ -153,9 +196,12 @@ export default function EinkaufslistePage() {
                 className="w-full border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
+            <div className="pb-1">
+              <MealToggle value={endMeal} onChange={updateEndMeal} />
+            </div>
           </div>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-            {formatDisplay(range.start)} – {formatDisplay(range.end)}
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            {formatDisplay(range.start)} {startMeal === 'mittag' ? 'Mittag' : 'Abend'} – {formatDisplay(range.end)} {endMeal === 'mittag' ? 'Mittag' : 'Abend'}
           </p>
         </div>
 
@@ -172,10 +218,7 @@ export default function EinkaufslistePage() {
           <>
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden">
               {unchecked.map(item => (
-                <div
-                  key={item.name}
-                  className="flex items-center gap-3 px-4 py-3 border-b last:border-0 border-gray-100 dark:border-gray-700"
-                >
+                <div key={item.name} className="flex items-center gap-3 px-4 py-3 border-b last:border-0 border-gray-100 dark:border-gray-700">
                   <button onClick={() => toggleChecked(item.name)} className="shrink-0">
                     <span className="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-500 block" />
                   </button>
@@ -188,10 +231,7 @@ export default function EinkaufslistePage() {
             {done.length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden opacity-50">
                 {done.map(item => (
-                  <div
-                    key={item.name}
-                    className="flex items-center gap-3 px-4 py-3 border-b last:border-0 border-gray-100 dark:border-gray-700"
-                  >
+                  <div key={item.name} className="flex items-center gap-3 px-4 py-3 border-b last:border-0 border-gray-100 dark:border-gray-700">
                     <button onClick={() => toggleChecked(item.name)} className="shrink-0">
                       <span className="w-5 h-5 rounded border-2 border-red-600 bg-red-600 flex items-center justify-center">
                         <span className="text-white text-xs">✓</span>
