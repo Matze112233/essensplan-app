@@ -106,6 +106,28 @@ export default function HomePage() {
     setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, meal_plan_extras: extras } : e))
   }
 
+  const handleMove = async (source: MealPlanEntry, targetDate: string, targetMealType: MealType, target: MealPlanEntry | null) => {
+    // Optimistic update
+    if (target) {
+      setEntries(prev => prev.map(e => {
+        if (e.id === source.id) return { ...target, id: source.id, date: source.date, meal_type: source.meal_type }
+        if (e.id === target.id) return { ...source, id: target.id, date: target.date, meal_type: target.meal_type }
+        return e
+      }))
+      await Promise.all([
+        fetch('/api/meal-plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: source.date, meal_type: source.meal_type, dish_id: target.dish_id }) }),
+        fetch('/api/meal-plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: targetDate, meal_type: targetMealType, dish_id: source.dish_id }) }),
+      ])
+    } else {
+      setEntries(prev => prev.map(e => e.id === source.id ? { ...e, date: targetDate, meal_type: targetMealType } : e))
+      await Promise.all([
+        fetch('/api/meal-plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: targetDate, meal_type: targetMealType, dish_id: source.dish_id }) }),
+        fetch(`/api/meal-plan/${source.id}`, { method: 'DELETE' }),
+      ])
+    }
+    loadData()
+  }
+
   const handleAutoFill = async () => {
     if (autoFilling || dishes.length === 0) return
     setAutoFilling(true)
@@ -222,6 +244,7 @@ export default function HomePage() {
             onRemove={handleRemove}
             onExtrasChange={handleExtrasChange}
             onDishCreated={dish => setDishes(prev => [...prev, dish])}
+            onMove={handleMove}
           />
         )}
       </main>

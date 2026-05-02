@@ -4,6 +4,18 @@ import { Dish, MealPlanEntry, MealPlanExtra, MealType, WeekDay } from '@/types'
 import { useState } from 'react'
 import DishSelector from './DishSelector'
 import IngredientList from './IngredientList'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  useDraggable,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
 
 interface Props {
   week: WeekDay[]
@@ -12,15 +24,144 @@ interface Props {
   onRemove: (entry: MealPlanEntry) => void
   onExtrasChange: (entry: MealPlanEntry, extras: MealPlanExtra[]) => void
   onDishCreated?: (dish: Dish) => void
+  onMove: (source: MealPlanEntry, targetDate: string, targetMealType: MealType, target: MealPlanEntry | null) => void
 }
 
 interface ActiveSlot { date: string; mealType: MealType }
 interface ExtrasModal { entry: MealPlanEntry; inputs: string[] }
 
-export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasChange, onDishCreated }: Props) {
+// Grip icon
+function GripIcon() {
+  return (
+    <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor" className="opacity-40">
+      <circle cx="3" cy="3" r="1.5" /><circle cx="7" cy="3" r="1.5" />
+      <circle cx="3" cy="7" r="1.5" /><circle cx="7" cy="7" r="1.5" />
+      <circle cx="3" cy="11" r="1.5" /><circle cx="7" cy="11" r="1.5" />
+      <circle cx="3" cy="15" r="1.5" /><circle cx="7" cy="15" r="1.5" />
+    </svg>
+  )
+}
+
+interface SlotRowProps {
+  date: string
+  mealType: MealType
+  entry: MealPlanEntry | null
+  draggingId: string | null
+  onOpenSelector: () => void
+  onRemove: () => void
+  onOpenExtras: () => void
+}
+
+function SlotRow({ date, mealType, entry, draggingId, onOpenSelector, onRemove, onOpenExtras }: SlotRowProps) {
+  const slotId = `${date}|${mealType}`
+  const isDraggingThis = draggingId === slotId
+
+  const { setNodeRef: dropRef, isOver } = useDroppable({ id: slotId })
+  const { attributes, listeners, setNodeRef: dragRef, isDragging } = useDraggable({
+    id: slotId,
+    disabled: !entry,
+    data: { entry, date, mealType },
+  })
+
+  const isDropTarget = isOver && draggingId !== slotId
+
+  return (
+    <div
+      ref={dropRef}
+      className={`px-3 py-3 flex gap-2 items-start transition-colors ${isDropTarget ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+    >
+      {/* drag handle */}
+      <div
+        ref={dragRef}
+        {...(entry ? listeners : {})}
+        {...(entry ? attributes : {})}
+        className={`shrink-0 flex items-center pt-0.5 px-0.5 touch-none select-none cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-400 ${!entry ? 'invisible' : ''} ${isDraggingThis ? 'opacity-0' : ''}`}
+      >
+        <GripIcon />
+      </div>
+
+      <span className="text-xs font-black text-gray-300 dark:text-gray-600 uppercase tracking-wider w-10 shrink-0 pt-0.5">
+        {mealType}
+      </span>
+
+      {entry ? (
+        <div className={`flex-1 flex items-start justify-between gap-2 ${isDragging ? 'opacity-20' : ''}`}>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold text-blue-950 dark:text-blue-200">{entry.dish?.name}</div>
+            {entry.dish && (
+              <IngredientList ingredients={entry.dish.ingredients} className="text-xs text-gray-400 mt-0.5" />
+            )}
+            {entry.meal_plan_extras.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {entry.meal_plan_extras.map(ex => (
+                  <span key={ex.id} className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 font-semibold px-2 py-0.5 rounded-full">
+                    {ex.name}
+                  </span>
+                ))}
+              </div>
+            )}
+            <button
+              onClick={onOpenExtras}
+              className="text-xs text-gray-300 hover:text-red-500 font-bold mt-1 transition-colors"
+            >
+              + Extras
+            </button>
+          </div>
+          <button
+            onClick={onRemove}
+            className="text-gray-300 hover:text-red-500 text-xl leading-none shrink-0 transition-colors"
+          >
+            &times;
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={onOpenSelector}
+          className={`flex-1 text-left text-sm font-semibold transition-colors ${isDropTarget ? 'text-blue-400' : 'text-gray-300 hover:text-red-500'}`}
+        >
+          {isDropTarget ? 'Hier ablegen' : '+ Gericht wählen'}
+        </button>
+      )}
+    </div>
+  )
+}
+
+export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasChange, onDishCreated, onMove }: Props) {
   const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null)
   const [extrasModal, setExtrasModal] = useState<ExtrasModal | null>(null)
   const [savingExtras, setSavingExtras] = useState(false)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+  )
+
+  const draggingEntry = draggingId
+    ? week.flatMap(d => [d.mittag, d.abend]).find(e => {
+        if (!e || !draggingId) return false
+        const [date, mealType] = draggingId.split('|')
+        return e.date === date && e.meal_type === mealType
+      }) ?? null
+    : null
+
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    setDraggingId(active.id as string)
+  }
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    setDraggingId(null)
+    if (!over || active.id === over.id) return
+
+    const sourceData = active.data.current as { entry: MealPlanEntry; date: string; mealType: MealType } | undefined
+    if (!sourceData?.entry) return
+
+    const [targetDate, targetMealType] = (over.id as string).split('|')
+    const targetDay = week.find(d => d.date === targetDate)
+    const targetEntry = targetDay?.[targetMealType as MealType] ?? null
+
+    onMove(sourceData.entry, targetDate, targetMealType as MealType, targetEntry)
+  }
 
   const handleSelect = (dish: Dish) => {
     if (!activeSlot) return
@@ -64,65 +205,40 @@ export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasC
 
   return (
     <>
-      <div className="space-y-3">
-        {week.map(day => (
-          <div key={day.date} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-950 to-blue-900 text-white px-4 py-2.5">
-              <span className="font-black text-sm uppercase tracking-wide">{day.label}</span>
+      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="space-y-3">
+          {week.map(day => (
+            <div key={day.date} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-950 to-blue-900 text-white px-4 py-2.5">
+                <span className="font-black text-sm uppercase tracking-wide">{day.label}</span>
+              </div>
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                {(['mittag', 'abend'] as MealType[]).map(mealType => (
+                  <SlotRow
+                    key={mealType}
+                    date={day.date}
+                    mealType={mealType}
+                    entry={day[mealType]}
+                    draggingId={draggingId}
+                    onOpenSelector={() => setActiveSlot({ date: day.date, mealType })}
+                    onRemove={() => day[mealType] && onRemove(day[mealType]!)}
+                    onOpenExtras={() => day[mealType] && openExtras(day[mealType]!)}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {(['mittag', 'abend'] as MealType[]).map(mealType => {
-                const entry = day[mealType]
-                return (
-                  <div key={mealType} className="px-4 py-3 flex gap-3">
-                    <span className="text-xs font-black text-gray-300 dark:text-gray-600 uppercase tracking-wider w-12 shrink-0 pt-0.5">
-                      {mealType}
-                    </span>
-                    {entry ? (
-                      <div className="flex-1 flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-bold text-blue-950 dark:text-blue-200">{entry.dish?.name}</div>
-                          {entry.dish && (
-                            <IngredientList ingredients={entry.dish.ingredients} className="text-xs text-gray-400 mt-0.5" />
-                          )}
-                          {entry.meal_plan_extras.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {entry.meal_plan_extras.map(ex => (
-                                <span key={ex.id} className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 font-semibold px-2 py-0.5 rounded-full">
-                                  {ex.name}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          <button
-                            onClick={() => openExtras(entry)}
-                            className="text-xs text-gray-300 hover:text-red-500 font-bold mt-1 transition-colors"
-                          >
-                            + Extras
-                          </button>
-                        </div>
-                        <button
-                          onClick={() => onRemove(entry)}
-                          className="text-gray-300 hover:text-red-500 text-xl leading-none shrink-0 transition-colors"
-                        >
-                          &times;
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setActiveSlot({ date: day.date, mealType })}
-                        className="flex-1 text-left text-sm text-gray-300 hover:text-red-500 font-semibold transition-colors"
-                      >
-                        + Gericht wählen
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
+          ))}
+        </div>
+
+        <DragOverlay dropAnimation={null}>
+          {draggingEntry?.dish && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl px-4 py-3 border-l-4 border-red-500 opacity-95 pointer-events-none">
+              <div className="text-sm font-bold text-blue-950 dark:text-blue-200">{draggingEntry.dish.name}</div>
+              <IngredientList ingredients={draggingEntry.dish.ingredients} className="text-xs text-gray-400 mt-0.5" />
             </div>
-          </div>
-        ))}
-      </div>
+          )}
+        </DragOverlay>
+      </DndContext>
 
       {activeSlot && (
         <DishSelector
