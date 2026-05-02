@@ -259,14 +259,14 @@ export default function HomePage() {
             disabled={undoStack.length === 0}
             className="flex-1 text-center text-base py-1 rounded-lg border border-blue-500 text-blue-200 hover:bg-blue-800 hover:text-white disabled:opacity-30 disabled:cursor-default transition-colors"
           >
-            ↺
+            ↶
           </button>
           <button
             onClick={handleRedo}
             disabled={redoStack.length === 0}
             className="flex-1 text-center text-base py-1 rounded-lg border border-blue-500 text-blue-200 hover:bg-blue-800 hover:text-white disabled:opacity-30 disabled:cursor-default transition-colors"
           >
-            ↻
+            ↷
           </button>
         </div>
       </header>

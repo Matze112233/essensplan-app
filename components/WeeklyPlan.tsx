@@ -31,6 +31,18 @@ interface Props {
 interface ActiveSlot { date: string; mealType: MealType }
 interface ExtrasModal { entry: MealPlanEntry; inputs: string[] }
 
+function CartIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      className={`transition-colors ${active ? 'stroke-green-500' : 'stroke-gray-300 dark:stroke-gray-600'}`}
+    >
+      <circle cx="9" cy="21" r="1" />
+      <circle cx="20" cy="21" r="1" />
+      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+    </svg>
+  )
+}
+
 // Grip icon
 function GripIcon() {
   return (
@@ -118,12 +130,10 @@ function SlotRow({ date, mealType, entry, draggingId, onOpenSelector, onRemove, 
             </button>
             <button
               onClick={onToggleShopping}
-              className="flex flex-col items-center gap-0.5"
+              className="hover:opacity-70 transition-opacity"
               title={entry.include_in_shopping ? 'Zutaten auf Einkaufsliste' : 'Zutaten ausgeschlossen'}
             >
-              <span className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${entry.include_in_shopping ? 'border-green-500 bg-green-500' : 'border-gray-300 dark:border-gray-600'}`}>
-                {entry.include_in_shopping && <span className="text-white leading-none" style={{ fontSize: 9 }}>✓</span>}
-              </span>
+              <CartIcon active={entry.include_in_shopping} />
             </button>
           </div>
         </div>
