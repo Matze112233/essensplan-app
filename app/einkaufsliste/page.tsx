@@ -56,7 +56,6 @@ export default function EinkaufslistePage() {
   const { dark, toggle } = useTheme()
   const [range, setRange] = useState(getDefaultRange)
   const [startMeal, setStartMeal] = useState<MealBoundary>('both')
-  const [endMeal, setEndMeal] = useState<MealBoundary>('both')
   const [items, setItems] = useState<ShoppingItem[]>([])
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [checked, setChecked] = useState<Set<string>>(new Set())
@@ -70,34 +69,28 @@ export default function EinkaufslistePage() {
         const data = JSON.parse(saved)
         setRange({ start: data.start, end: data.end })
         if (data.startMeal) setStartMeal(data.startMeal)
-        if (data.endMeal) setEndMeal(data.endMeal)
       }
     } catch {}
   }, [])
 
-  const saveToStorage = (r: { start: string; end: string }, sm: MealBoundary, em: MealBoundary) => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...r, startMeal: sm, endMeal: em })) } catch {}
+  const saveToStorage = (r: { start: string; end: string }, sm: MealBoundary) => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...r, startMeal: sm })) } catch {}
   }
 
   const updateRange = (next: { start: string; end: string }) => {
     setRange(next)
-    saveToStorage(next, startMeal, endMeal)
+    saveToStorage(next, startMeal)
   }
 
   const updateStartMeal = (meal: MealBoundary) => {
     setStartMeal(meal)
-    saveToStorage(range, meal, endMeal)
-  }
-
-  const updateEndMeal = (meal: MealBoundary) => {
-    setEndMeal(meal)
-    saveToStorage(range, startMeal, meal)
+    saveToStorage(range, meal)
   }
 
   const loadList = useCallback(async () => {
     setLoading(true)
     const res = await fetch(
-      `/api/shopping-list?week_start=${range.start}&week_end=${range.end}&start_meal=${startMeal}&end_meal=${endMeal}`
+      `/api/shopping-list?week_start=${range.start}&week_end=${range.end}&start_meal=${startMeal}`
     )
     const data: ShoppingItem[] = await res.json()
     setItems(data)
@@ -106,7 +99,7 @@ export default function EinkaufslistePage() {
     setQuantities(initial)
     setChecked(new Set())
     setLoading(false)
-  }, [range.start, range.end, startMeal, endMeal])
+  }, [range.start, range.end, startMeal])
 
   useEffect(() => { loadList() }, [loadList])
 
@@ -192,23 +185,18 @@ export default function EinkaufslistePage() {
               <MealToggle value={startMeal} onChange={updateStartMeal} />
             </div>
           </div>
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
-              <label className="text-xs text-gray-400 dark:text-gray-500 block mb-1">Bis</label>
-              <input
-                type="date"
-                value={range.end}
-                min={range.start}
-                onChange={e => updateRange({ ...range, end: e.target.value })}
-                className="w-full border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-            </div>
-            <div className="pb-1">
-              <MealToggle value={endMeal} onChange={updateEndMeal} />
-            </div>
+          <div className="flex-1">
+            <label className="text-xs text-gray-400 dark:text-gray-500 block mb-1">Bis</label>
+            <input
+              type="date"
+              value={range.end}
+              min={range.start}
+              onChange={e => updateRange({ ...range, end: e.target.value })}
+              className="w-full border-2 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
           </div>
           <p className="text-xs text-gray-400 dark:text-gray-500">
-            {formatDisplay(range.start)} {startMeal === 'both' ? 'ganztags' : startMeal === 'mittag' ? 'Mittag' : 'Abend'} – {formatDisplay(range.end)} {endMeal === 'both' ? 'ganztags' : endMeal === 'mittag' ? 'Mittag' : 'Abend'}
+            {formatDisplay(range.start)} {startMeal === 'both' ? 'ganztags' : startMeal === 'mittag' ? 'Mittag' : 'Abend'} – {formatDisplay(range.end)} ganztags
           </p>
         </div>
 
