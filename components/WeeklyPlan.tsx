@@ -102,33 +102,30 @@ function SlotRow({ date, mealType, entry, draggingId, onOpenSelector, onRemove, 
                 ))}
               </div>
             )}
-            <div className="flex items-center gap-3 mt-1.5">
-              <button
-                onClick={onToggleShopping}
-                className="flex items-center gap-1.5 group"
-                title={entry.include_in_shopping ? 'Zutaten auf Einkaufsliste (klicken zum Ausschließen)' : 'Zutaten nicht auf Einkaufsliste (klicken zum Einschließen)'}
-              >
-                <span className={`w-3.5 h-3.5 rounded border-2 flex items-center justify-center transition-colors shrink-0 ${entry.include_in_shopping ? 'border-green-500 bg-green-500' : 'border-gray-300 dark:border-gray-600'}`}>
-                  {entry.include_in_shopping && <span className="text-white leading-none" style={{ fontSize: 9 }}>✓</span>}
-                </span>
-                <span className={`text-xs transition-colors ${entry.include_in_shopping ? 'text-gray-400 dark:text-gray-500' : 'text-gray-300 dark:text-gray-600 line-through'}`}>
-                  Einkauf
-                </span>
-              </button>
-              <button
-                onClick={onOpenExtras}
-                className="text-xs text-gray-300 hover:text-red-500 font-bold transition-colors"
-              >
-                + Extras
-              </button>
-            </div>
+            <button
+              onClick={onOpenExtras}
+              className="text-xs text-gray-300 hover:text-red-500 font-bold mt-1.5 transition-colors"
+            >
+              + Extras
+            </button>
           </div>
-          <button
-            onClick={onRemove}
-            className="text-gray-300 hover:text-red-500 text-xl leading-none shrink-0 transition-colors"
-          >
-            &times;
-          </button>
+          <div className="flex flex-col items-center gap-2 shrink-0">
+            <button
+              onClick={onRemove}
+              className="text-gray-300 hover:text-red-500 text-xl leading-none transition-colors"
+            >
+              &times;
+            </button>
+            <button
+              onClick={onToggleShopping}
+              className="flex flex-col items-center gap-0.5"
+              title={entry.include_in_shopping ? 'Zutaten auf Einkaufsliste' : 'Zutaten ausgeschlossen'}
+            >
+              <span className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${entry.include_in_shopping ? 'border-green-500 bg-green-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                {entry.include_in_shopping && <span className="text-white leading-none" style={{ fontSize: 9 }}>✓</span>}
+              </span>
+            </button>
+          </div>
         </div>
       ) : (
         <button

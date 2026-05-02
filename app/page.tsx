@@ -9,6 +9,29 @@ import { useCallback, useEffect, useState } from 'react'
 const STORAGE_KEY = 'essensplan_range'
 const DAY_LABELS = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
 
+async function syncEntriesToServer(snapshot: MealPlanEntry[], current: MealPlanEntry[]) {
+  const slots = new Set([
+    ...current.map(e => `${e.date}|${e.meal_type}`),
+    ...snapshot.map(e => `${e.date}|${e.meal_type}`),
+  ])
+  const ops: Promise<Response>[] = []
+  for (const slot of slots) {
+    const [date, meal_type] = slot.split('|')
+    const cur = current.find(e => e.date === date && e.meal_type === meal_type)
+    const target = snapshot.find(e => e.date === date && e.meal_type === meal_type)
+    if (target && (!cur || cur.dish_id !== target.dish_id)) {
+      ops.push(fetch('/api/meal-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: target.date, meal_type: target.meal_type, dish_id: target.dish_id }),
+      }))
+    } else if (!target && cur) {
+      ops.push(fetch(`/api/meal-plan/${cur.id}`, { method: 'DELETE' }))
+    }
+  }
+  await Promise.all(ops)
+}
+
 function parseLocal(dateStr: string): Date {
   const [y, m, d] = dateStr.split('-').map(Number)
   return new Date(y, m - 1, d)
@@ -46,6 +69,8 @@ export default function HomePage() {
   const [entries, setEntries] = useState<MealPlanEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [autoFilling, setAutoFilling] = useState(false)
+  const [undoStack, setUndoStack] = useState<MealPlanEntry[][]>([])
+  const [redoStack, setRedoStack] = useState<MealPlanEntry[][]>([])
 
   useEffect(() => {
     try {
@@ -88,6 +113,7 @@ export default function HomePage() {
   }))
 
   const handleAssign = async (date: string, mealType: MealType, dish: Dish) => {
+    pushHistory(entries)
     const res = await fetch('/api/meal-plan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -98,12 +124,38 @@ export default function HomePage() {
   }
 
   const handleRemove = async (entry: MealPlanEntry) => {
+    pushHistory(entries)
     await fetch(`/api/meal-plan/${entry.id}`, { method: 'DELETE' })
     setEntries(prev => prev.filter(e => e.id !== entry.id))
   }
 
   const handleExtrasChange = (entry: MealPlanEntry, extras: MealPlanEntry['meal_plan_extras']) => {
     setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, meal_plan_extras: extras } : e))
+  }
+
+  const pushHistory = (snapshot: MealPlanEntry[]) => {
+    setUndoStack(prev => [...prev.slice(-19), snapshot])
+    setRedoStack([])
+  }
+
+  const handleUndo = async () => {
+    if (undoStack.length === 0) return
+    const previous = undoStack[undoStack.length - 1]
+    setUndoStack(prev => prev.slice(0, -1))
+    setRedoStack(prev => [entries, ...prev.slice(0, 19)])
+    setEntries(previous)
+    await syncEntriesToServer(previous, entries)
+    loadData()
+  }
+
+  const handleRedo = async () => {
+    if (redoStack.length === 0) return
+    const next = redoStack[0]
+    setRedoStack(prev => prev.slice(1))
+    setUndoStack(prev => [...prev.slice(-19), entries])
+    setEntries(next)
+    await syncEntriesToServer(next, entries)
+    loadData()
   }
 
   const handleToggleShopping = async (entry: MealPlanEntry, include: boolean) => {
@@ -116,6 +168,7 @@ export default function HomePage() {
   }
 
   const handleMove = async (source: MealPlanEntry, targetDate: string, targetMealType: MealType, target: MealPlanEntry | null) => {
+    pushHistory(entries)
     // Optimistic update
     if (target) {
       setEntries(prev => prev.map(e => {
@@ -139,6 +192,7 @@ export default function HomePage() {
 
   const handleAutoFill = async () => {
     if (autoFilling || dishes.length === 0) return
+    pushHistory(entries)
     setAutoFilling(true)
 
     const newEntries: MealPlanEntry[] = []
@@ -198,6 +252,22 @@ export default function HomePage() {
           <Link href="/gerichte" className="flex-1 text-center text-xs font-black uppercase tracking-wide px-2 py-1.5 rounded-lg border border-blue-500 text-blue-200 hover:bg-blue-800 hover:text-white transition-colors">Gerichte</Link>
           <Link href="/rezepte" className="flex-1 text-center text-xs font-black uppercase tracking-wide px-2 py-1.5 rounded-lg border border-blue-500 text-blue-200 hover:bg-blue-800 hover:text-white transition-colors">Rezepte</Link>
           <Link href="/einkaufsliste" className="flex-1 text-center text-xs font-black uppercase tracking-wide px-2 py-1.5 rounded-lg border border-blue-500 text-blue-200 hover:bg-blue-800 hover:text-white transition-colors">Einkauf</Link>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleUndo}
+            disabled={undoStack.length === 0}
+            className="flex-1 text-center text-base py-1 rounded-lg border border-blue-500 text-blue-200 hover:bg-blue-800 hover:text-white disabled:opacity-30 disabled:cursor-default transition-colors"
+          >
+            ↺
+          </button>
+          <button
+            onClick={handleRedo}
+            disabled={redoStack.length === 0}
+            className="flex-1 text-center text-base py-1 rounded-lg border border-blue-500 text-blue-200 hover:bg-blue-800 hover:text-white disabled:opacity-30 disabled:cursor-default transition-colors"
+          >
+            ↻
+          </button>
         </div>
       </header>
 
