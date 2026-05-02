@@ -7,3 +7,14 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }
+
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const { include_in_shopping } = await request.json()
+  const { error } = await supabase
+    .from('meal_plan_entries')
+    .update({ include_in_shopping })
+    .eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ success: true })
+}

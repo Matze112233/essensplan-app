@@ -25,6 +25,7 @@ interface Props {
   onExtrasChange: (entry: MealPlanEntry, extras: MealPlanExtra[]) => void
   onDishCreated?: (dish: Dish) => void
   onMove: (source: MealPlanEntry, targetDate: string, targetMealType: MealType, target: MealPlanEntry | null) => void
+  onToggleShopping: (entry: MealPlanEntry, include: boolean) => void
 }
 
 interface ActiveSlot { date: string; mealType: MealType }
@@ -50,9 +51,10 @@ interface SlotRowProps {
   onOpenSelector: () => void
   onRemove: () => void
   onOpenExtras: () => void
+  onToggleShopping: () => void
 }
 
-function SlotRow({ date, mealType, entry, draggingId, onOpenSelector, onRemove, onOpenExtras }: SlotRowProps) {
+function SlotRow({ date, mealType, entry, draggingId, onOpenSelector, onRemove, onOpenExtras, onToggleShopping }: SlotRowProps) {
   const slotId = `${date}|${mealType}`
   const isDraggingThis = draggingId === slotId
 
@@ -100,12 +102,26 @@ function SlotRow({ date, mealType, entry, draggingId, onOpenSelector, onRemove, 
                 ))}
               </div>
             )}
-            <button
-              onClick={onOpenExtras}
-              className="text-xs text-gray-300 hover:text-red-500 font-bold mt-1 transition-colors"
-            >
-              + Extras
-            </button>
+            <div className="flex items-center gap-3 mt-1.5">
+              <button
+                onClick={onToggleShopping}
+                className="flex items-center gap-1.5 group"
+                title={entry.include_in_shopping ? 'Zutaten auf Einkaufsliste (klicken zum Ausschließen)' : 'Zutaten nicht auf Einkaufsliste (klicken zum Einschließen)'}
+              >
+                <span className={`w-3.5 h-3.5 rounded border-2 flex items-center justify-center transition-colors shrink-0 ${entry.include_in_shopping ? 'border-green-500 bg-green-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                  {entry.include_in_shopping && <span className="text-white leading-none" style={{ fontSize: 9 }}>✓</span>}
+                </span>
+                <span className={`text-xs transition-colors ${entry.include_in_shopping ? 'text-gray-400 dark:text-gray-500' : 'text-gray-300 dark:text-gray-600 line-through'}`}>
+                  Einkauf
+                </span>
+              </button>
+              <button
+                onClick={onOpenExtras}
+                className="text-xs text-gray-300 hover:text-red-500 font-bold transition-colors"
+              >
+                + Extras
+              </button>
+            </div>
           </div>
           <button
             onClick={onRemove}
@@ -126,7 +142,7 @@ function SlotRow({ date, mealType, entry, draggingId, onOpenSelector, onRemove, 
   )
 }
 
-export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasChange, onDishCreated, onMove }: Props) {
+export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasChange, onDishCreated, onMove, onToggleShopping }: Props) {
   const [activeSlot, setActiveSlot] = useState<ActiveSlot | null>(null)
   const [extrasModal, setExtrasModal] = useState<ExtrasModal | null>(null)
   const [savingExtras, setSavingExtras] = useState(false)
@@ -223,6 +239,7 @@ export default function WeeklyPlan({ week, dishes, onAssign, onRemove, onExtrasC
                     onOpenSelector={() => setActiveSlot({ date: day.date, mealType })}
                     onRemove={() => day[mealType] && onRemove(day[mealType]!)}
                     onOpenExtras={() => day[mealType] && openExtras(day[mealType]!)}
+                    onToggleShopping={() => { const e = day[mealType]; if (e) onToggleShopping(e, !e.include_in_shopping) }}
                   />
                 ))}
               </div>

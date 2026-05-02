@@ -106,6 +106,15 @@ export default function HomePage() {
     setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, meal_plan_extras: extras } : e))
   }
 
+  const handleToggleShopping = async (entry: MealPlanEntry, include: boolean) => {
+    setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, include_in_shopping: include } : e))
+    await fetch(`/api/meal-plan/${entry.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ include_in_shopping: include }),
+    })
+  }
+
   const handleMove = async (source: MealPlanEntry, targetDate: string, targetMealType: MealType, target: MealPlanEntry | null) => {
     // Optimistic update
     if (target) {
@@ -245,6 +254,7 @@ export default function HomePage() {
             onExtrasChange={handleExtrasChange}
             onDishCreated={dish => setDishes(prev => [...prev, dish])}
             onMove={handleMove}
+            onToggleShopping={handleToggleShopping}
           />
         )}
       </main>

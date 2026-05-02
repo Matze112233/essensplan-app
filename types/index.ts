@@ -46,6 +46,7 @@ export interface MealPlanEntry {
   dish_id: string
   dish?: Dish
   meal_plan_extras: MealPlanExtra[]
+  include_in_shopping: boolean
 }
 
 export interface WeekDay {

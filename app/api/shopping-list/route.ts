@@ -9,6 +9,7 @@ export async function GET(request: Request) {
   let query = supabase
     .from('meal_plan_entries')
     .select('dish:dishes(ingredients(name), recipe:recipes(recipe_ingredients(name))), meal_plan_extras(name)')
+    .eq('include_in_shopping', true)
 
   if (weekStart && weekEnd) {
     query = query.gte('date', weekStart).lte('date', weekEnd)
