@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { useTheme } from '@/components/ThemeProvider'
-import { MealType } from '@/types'
+type MealBoundary = 'mittag' | 'abend' | 'both'
 
 interface ShoppingItem {
   name: string
@@ -26,21 +26,28 @@ function formatDisplay(dateStr: string) {
   return `${Number(d)}.${Number(m)}.`
 }
 
-function MealToggle({ value, onChange }: { value: MealType; onChange: (v: MealType) => void }) {
+function MealToggle({ value, onChange }: { value: MealBoundary; onChange: (v: MealBoundary) => void }) {
+  const mActive = value === 'mittag' || value === 'both'
+  const aActive = value === 'abend' || value === 'both'
+
+  const toggleM = () => {
+    if (mActive && aActive) onChange('abend')
+    else if (!mActive) onChange('both')
+    // mActive && !aActive → do nothing (last selection)
+  }
+  const toggleA = () => {
+    if (mActive && aActive) onChange('mittag')
+    else if (!aActive) onChange('both')
+    // aActive && !mActive → do nothing (last selection)
+  }
+
+  const cls = (active: boolean) =>
+    `px-2 py-1 text-xs font-black uppercase tracking-wide transition-colors ${active ? 'bg-blue-900 text-white' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`
+
   return (
     <div className="flex rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600 shrink-0">
-      <button
-        onClick={() => onChange('mittag')}
-        className={`px-2 py-1 text-xs font-black uppercase tracking-wide transition-colors ${value === 'mittag' ? 'bg-blue-900 text-white' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-      >
-        M
-      </button>
-      <button
-        onClick={() => onChange('abend')}
-        className={`px-2 py-1 text-xs font-black uppercase tracking-wide transition-colors ${value === 'abend' ? 'bg-blue-900 text-white' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-      >
-        A
-      </button>
+      <button onClick={toggleM} className={cls(mActive)}>M</button>
+      <button onClick={toggleA} className={cls(aActive)}>A</button>
     </div>
   )
 }
@@ -48,8 +55,8 @@ function MealToggle({ value, onChange }: { value: MealType; onChange: (v: MealTy
 export default function EinkaufslistePage() {
   const { dark, toggle } = useTheme()
   const [range, setRange] = useState(getDefaultRange)
-  const [startMeal, setStartMeal] = useState<MealType>('mittag')
-  const [endMeal, setEndMeal] = useState<MealType>('abend')
+  const [startMeal, setStartMeal] = useState<MealBoundary>('both')
+  const [endMeal, setEndMeal] = useState<MealBoundary>('both')
   const [items, setItems] = useState<ShoppingItem[]>([])
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [checked, setChecked] = useState<Set<string>>(new Set())
@@ -68,7 +75,7 @@ export default function EinkaufslistePage() {
     } catch {}
   }, [])
 
-  const saveToStorage = (r: { start: string; end: string }, sm: MealType, em: MealType) => {
+  const saveToStorage = (r: { start: string; end: string }, sm: MealBoundary, em: MealBoundary) => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...r, startMeal: sm, endMeal: em })) } catch {}
   }
 
@@ -77,12 +84,12 @@ export default function EinkaufslistePage() {
     saveToStorage(next, startMeal, endMeal)
   }
 
-  const updateStartMeal = (meal: MealType) => {
+  const updateStartMeal = (meal: MealBoundary) => {
     setStartMeal(meal)
     saveToStorage(range, meal, endMeal)
   }
 
-  const updateEndMeal = (meal: MealType) => {
+  const updateEndMeal = (meal: MealBoundary) => {
     setEndMeal(meal)
     saveToStorage(range, startMeal, meal)
   }
@@ -201,7 +208,7 @@ export default function EinkaufslistePage() {
             </div>
           </div>
           <p className="text-xs text-gray-400 dark:text-gray-500">
-            {formatDisplay(range.start)} {startMeal === 'mittag' ? 'Mittag' : 'Abend'} – {formatDisplay(range.end)} {endMeal === 'mittag' ? 'Mittag' : 'Abend'}
+            {formatDisplay(range.start)} {startMeal === 'both' ? 'ganztags' : startMeal === 'mittag' ? 'Mittag' : 'Abend'} – {formatDisplay(range.end)} {endMeal === 'both' ? 'ganztags' : endMeal === 'mittag' ? 'Mittag' : 'Abend'}
           </p>
         </div>
 
