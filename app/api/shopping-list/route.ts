@@ -33,10 +33,10 @@ export async function GET(request: Request) {
   })) {
     const dish = entry.dish
     if (dish) {
-      const items: { name: string }[] =
-        dish.recipe?.recipe_ingredients?.length
-          ? dish.recipe.recipe_ingredients
-          : dish.ingredients ?? []
+      const items: { name: string }[] = [
+        ...(dish.recipe?.recipe_ingredients ?? []),
+        ...(dish.ingredients ?? []),
+      ]
       for (const ing of items) add(ing.name)
     }
     for (const extra of entry.meal_plan_extras ?? []) add(extra.name)
