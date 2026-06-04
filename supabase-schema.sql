@@ -22,6 +22,21 @@ create table meal_plan_entries (
   created_at timestamptz default now()
 );
 
+-- Einkaufslisten-State (ein geteilter Zustand für alle Geräte)
+create table shopping_list_state (
+  id int primary key,
+  range_start text not null,
+  range_end text not null,
+  start_meal text not null,
+  checked text[] not null default '{}',
+  quantities jsonb not null default '{}',
+  updated_at timestamptz default now()
+);
+
+insert into shopping_list_state (id, range_start, range_end, start_meal)
+values (1, '', '', 'both')
+on conflict do nothing;
+
 -- Zugriff für alle (keine Authentifizierung)
 alter table dishes enable row level security;
 alter table ingredients enable row level security;
@@ -41,3 +56,8 @@ create policy "Alle dürfen lesen" on meal_plan_entries for select using (true);
 create policy "Alle dürfen schreiben" on meal_plan_entries for insert with check (true);
 create policy "Alle dürfen bearbeiten" on meal_plan_entries for update using (true);
 create policy "Alle dürfen löschen" on meal_plan_entries for delete using (true);
+
+alter table shopping_list_state enable row level security;
+create policy "Alle dürfen lesen" on shopping_list_state for select using (true);
+create policy "Alle dürfen schreiben" on shopping_list_state for insert with check (true);
+create policy "Alle dürfen bearbeiten" on shopping_list_state for update using (true);

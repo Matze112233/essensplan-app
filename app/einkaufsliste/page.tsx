@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTheme } from '@/components/ThemeProvider'
 type MealBoundary = 'mittag' | 'abend' | 'both'
 
@@ -11,7 +11,6 @@ interface ShoppingItem {
 }
 
 const STORAGE_KEY = 'essensplan_range'
-const SHOPPING_STATE_KEY = 'essensplan_shopping_state'
 
 function getDefaultRange() {
   const today = new Date()
@@ -62,6 +61,7 @@ export default function EinkaufslistePage() {
   const [checked, setChecked] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     try {
@@ -90,25 +90,19 @@ export default function EinkaufslistePage() {
 
   const loadList = useCallback(async () => {
     setLoading(true)
-    const res = await fetch(
-      `/api/shopping-list?week_start=${range.start}&week_end=${range.end}&start_meal=${startMeal}`
-    )
-    const data: ShoppingItem[] = await res.json()
+    const [listRes, stateRes] = await Promise.all([
+      fetch(`/api/shopping-list?week_start=${range.start}&week_end=${range.end}&start_meal=${startMeal}`),
+      fetch('/api/shopping-list/state'),
+    ])
+    const data: ShoppingItem[] = await listRes.json()
+    const saved = stateRes.ok ? await stateRes.json() : null
     setItems(data)
 
-    try {
-      const saved = JSON.parse(localStorage.getItem(SHOPPING_STATE_KEY) ?? 'null')
-      const match = saved?.range?.start === range.start && saved?.range?.end === range.end && saved?.startMeal === startMeal
-      const qty: Record<string, number> = {}
-      data.forEach(item => { qty[item.name] = (match ? saved.quantities?.[item.name] : null) ?? item.count })
-      setQuantities(qty)
-      setChecked(new Set(match ? (saved.checked ?? []) : []))
-    } catch {
-      const qty: Record<string, number> = {}
-      data.forEach(item => { qty[item.name] = item.count })
-      setQuantities(qty)
-      setChecked(new Set())
-    }
+    const match = saved?.range_start === range.start && saved?.range_end === range.end && saved?.start_meal === startMeal
+    const qty: Record<string, number> = {}
+    data.forEach(item => { qty[item.name] = (match ? saved.quantities?.[item.name] : null) ?? item.count })
+    setQuantities(qty)
+    setChecked(new Set(match ? (saved.checked ?? []) : []))
 
     setLoading(false)
   }, [range.start, range.end, startMeal])
@@ -117,10 +111,15 @@ export default function EinkaufslistePage() {
 
   useEffect(() => {
     if (loading) return
-    try {
-      localStorage.setItem(SHOPPING_STATE_KEY, JSON.stringify({ range, startMeal, checked: [...checked], quantities }))
-    } catch {}
-  }, [checked, quantities, loading, range, startMeal])
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => {
+      fetch('/api/shopping-list/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ range_start: range.start, range_end: range.end, start_meal: startMeal, checked: [...checked], quantities }),
+      })
+    }, 500)
+  }, [checked, quantities, loading, range.start, range.end, startMeal])
 
   const toggleChecked = (name: string) => {
     setChecked(prev => {
