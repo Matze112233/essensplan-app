@@ -11,6 +11,7 @@ interface ShoppingItem {
 }
 
 const STORAGE_KEY = 'essensplan_range'
+const SHOPPING_STATE_KEY = 'essensplan_shopping_state'
 
 function getDefaultRange() {
   const today = new Date()
@@ -94,14 +95,32 @@ export default function EinkaufslistePage() {
     )
     const data: ShoppingItem[] = await res.json()
     setItems(data)
-    const initial: Record<string, number> = {}
-    data.forEach(item => { initial[item.name] = item.count })
-    setQuantities(initial)
-    setChecked(new Set())
+
+    try {
+      const saved = JSON.parse(localStorage.getItem(SHOPPING_STATE_KEY) ?? 'null')
+      const match = saved?.range?.start === range.start && saved?.range?.end === range.end && saved?.startMeal === startMeal
+      const qty: Record<string, number> = {}
+      data.forEach(item => { qty[item.name] = (match ? saved.quantities?.[item.name] : null) ?? item.count })
+      setQuantities(qty)
+      setChecked(new Set(match ? (saved.checked ?? []) : []))
+    } catch {
+      const qty: Record<string, number> = {}
+      data.forEach(item => { qty[item.name] = item.count })
+      setQuantities(qty)
+      setChecked(new Set())
+    }
+
     setLoading(false)
   }, [range.start, range.end, startMeal])
 
   useEffect(() => { loadList() }, [loadList])
+
+  useEffect(() => {
+    if (loading) return
+    try {
+      localStorage.setItem(SHOPPING_STATE_KEY, JSON.stringify({ range, startMeal, checked: [...checked], quantities }))
+    } catch {}
+  }, [checked, quantities, loading, range, startMeal])
 
   const toggleChecked = (name: string) => {
     setChecked(prev => {
