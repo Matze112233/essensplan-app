@@ -6,7 +6,6 @@ import { Dish, MealPlanEntry, MealType, WeekDay } from '@/types'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 
-const STORAGE_KEY = 'essensplan_range'
 const DAY_LABELS = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
 
 async function syncEntriesToServer(snapshot: MealPlanEntry[], current: MealPlanEntry[]) {
@@ -72,16 +71,8 @@ export default function HomePage() {
   const [undoStack, setUndoStack] = useState<MealPlanEntry[][]>([])
   const [redoStack, setRedoStack] = useState<MealPlanEntry[][]>([])
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved) setRange(JSON.parse(saved))
-    } catch {}
-  }, [])
-
   const updateRange = (next: { start: string; end: string }) => {
     setRange(next)
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
   }
 
   const resetToday = () => updateRange(getDefaultRange())
@@ -169,23 +160,25 @@ export default function HomePage() {
 
   const handleMove = async (source: MealPlanEntry, targetDate: string, targetMealType: MealType, target: MealPlanEntry | null) => {
     pushHistory(entries)
-    // Optimistic update
     if (target) {
+      // Swap: exchange dish_id + extras between both existing entries (preserves IDs)
       setEntries(prev => prev.map(e => {
-        if (e.id === source.id) return { ...target, id: source.id, date: source.date, meal_type: source.meal_type }
-        if (e.id === target.id) return { ...source, id: target.id, date: target.date, meal_type: target.meal_type }
+        if (e.id === source.id) return { ...source, dish_id: target.dish_id, dish: target.dish, meal_plan_extras: target.meal_plan_extras }
+        if (e.id === target.id) return { ...target, dish_id: source.dish_id, dish: source.dish, meal_plan_extras: source.meal_plan_extras }
         return e
       }))
+      const sourceExtrasNames = source.meal_plan_extras.map(ex => ex.name)
+      const targetExtrasNames = target.meal_plan_extras.map(ex => ex.name)
       await Promise.all([
-        fetch('/api/meal-plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: source.date, meal_type: source.meal_type, dish_id: target.dish_id }) }),
-        fetch('/api/meal-plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: targetDate, meal_type: targetMealType, dish_id: source.dish_id }) }),
+        fetch(`/api/meal-plan/${source.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dish_id: target.dish_id }) }),
+        fetch(`/api/meal-plan/${target.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dish_id: source.dish_id }) }),
+        fetch(`/api/meal-plan/${source.id}/extras`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names: targetExtrasNames }) }),
+        fetch(`/api/meal-plan/${target.id}/extras`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names: sourceExtrasNames }) }),
       ])
     } else {
+      // Move to empty slot: just update date/meal_type, entry keeps its ID and extras
       setEntries(prev => prev.map(e => e.id === source.id ? { ...e, date: targetDate, meal_type: targetMealType } : e))
-      await Promise.all([
-        fetch('/api/meal-plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: targetDate, meal_type: targetMealType, dish_id: source.dish_id }) }),
-        fetch(`/api/meal-plan/${source.id}`, { method: 'DELETE' }),
-      ])
+      await fetch(`/api/meal-plan/${source.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: targetDate, meal_type: targetMealType }) })
     }
     loadData()
   }
