@@ -9,26 +9,62 @@ import { useCallback, useEffect, useState } from 'react'
 const DAY_LABELS = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
 
 async function syncEntriesToServer(snapshot: MealPlanEntry[], current: MealPlanEntry[]) {
-  const slots = new Set([
-    ...current.map(e => `${e.date}|${e.meal_type}`),
-    ...snapshot.map(e => `${e.date}|${e.meal_type}`),
-  ])
-  const ops: Promise<Response>[] = []
-  for (const slot of slots) {
-    const [date, meal_type] = slot.split('|')
-    const cur = current.find(e => e.date === date && e.meal_type === meal_type)
-    const target = snapshot.find(e => e.date === date && e.meal_type === meal_type)
-    if (target && (!cur || cur.dish_id !== target.dish_id)) {
-      ops.push(fetch('/api/meal-plan', {
+  const parallelOps: Promise<Response>[] = []
+
+  for (const target of snapshot) {
+    const cur = current.find(e => e.id === target.id)
+    if (!cur) continue
+
+    const fields: Record<string, unknown> = {}
+    if (cur.dish_id !== target.dish_id) fields.dish_id = target.dish_id
+    if (cur.date !== target.date) fields.date = target.date
+    if (cur.meal_type !== target.meal_type) fields.meal_type = target.meal_type
+    if (Object.keys(fields).length > 0) {
+      parallelOps.push(fetch(`/api/meal-plan/${target.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fields),
+      }))
+    }
+
+    const targetNames = (target.meal_plan_extras ?? []).map(e => e.name).sort()
+    const curNames = (cur.meal_plan_extras ?? []).map(e => e.name).sort()
+    if (JSON.stringify(targetNames) !== JSON.stringify(curNames)) {
+      parallelOps.push(fetch(`/api/meal-plan/${target.id}/extras`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ names: targetNames }),
+      }))
+    }
+  }
+
+  for (const cur of current) {
+    if (!snapshot.find(e => e.id === cur.id)) {
+      parallelOps.push(fetch(`/api/meal-plan/${cur.id}`, { method: 'DELETE' }))
+    }
+  }
+
+  await Promise.all(parallelOps)
+
+  // Re-create entries that existed in snapshot but are gone from current (e.g. undo of remove)
+  for (const target of snapshot) {
+    if (!current.find(e => e.id === target.id)) {
+      const res = await fetch('/api/meal-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date: target.date, meal_type: target.meal_type, dish_id: target.dish_id }),
-      }))
-    } else if (!target && cur) {
-      ops.push(fetch(`/api/meal-plan/${cur.id}`, { method: 'DELETE' }))
+      })
+      const extras = (target.meal_plan_extras ?? []).map(e => e.name).filter(n => n.trim())
+      if (res.ok && extras.length > 0) {
+        const newEntry = await res.json()
+        await fetch(`/api/meal-plan/${newEntry.id}/extras`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ names: extras }),
+        })
+      }
     }
   }
-  await Promise.all(ops)
 }
 
 function parseLocal(dateStr: string): Date {
